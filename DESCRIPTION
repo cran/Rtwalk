@@ -1,15 +1,27 @@
 Package: Rtwalk
-Version: 1.8.0
-Date: 2015-09-16
-Title: The R Implementation of the 't-walk' MCMC Algorithm
-Author: J Andres Christen
-Maintainer: J Andres Christen <jac@cimat.mx>
-Depends: R (>= 2.8.0)
-Description: The 't-walk' is a general-purpose MCMC sampler for
-      arbitrary continuous distributions that requires no tuning.
+Type: Package
+Title: An MCMC Sampler Using the t-Walk Algorithm
+Version: 2.0.0
+Authors@R: person("Rodrigo Fonseca", "Villa", email = "rodrigo03.villa@gmail.com", role = c("aut", "cre"))
+Maintainer: Rodrigo Fonseca Villa <rodrigo03.villa@gmail.com>
+Description: Implements the t-walk algorithm, a general-purpose, self-adjusting
+    Markov Chain Monte Carlo (MCMC) sampler for continuous distributions as
+    described by Christen & Fox (2010) <doi:10.1214/10-BA603>. The t-walk requires
+    no tuning and is robust for a wide range of target distributions, including
+    high-dimensional and multimodal problems. This implementation includes an
+    option for running multiple chains in parallel to accelerate sampling and
+    facilitate convergence diagnostics.
 License: GPL-3
-URL: http://www.cimat.mx/~jac/twalk/
+Encoding: UTF-8
+RoxygenNote: 7.3.2
+Imports: parallel, stats, utils
+Suggests: mvtnorm, coda, devtools, roxygen2, knitr, rmarkdown, ellipse,
+        ggplot2, ggthemes, gridExtra, reshape2, viridis
+VignetteBuilder: knitr
+URL: https://github.com/rodrigosqrt3/Rtwalk
+BugReports: https://github.com/rodrigosqrt3/Rtwalk/issues
 NeedsCompilation: no
-Packaged: 2015-09-17 20:35:15 UTC; jac
+Packaged: 2026-01-28 23:38:33 UTC; rodri
+Author: Rodrigo Fonseca Villa [aut, cre]
 Repository: CRAN
-Date/Publication: 2015-09-18 08:58:26
+Date/Publication: 2026-02-02 10:50:02 UTC
