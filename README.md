@@ -1,20 +1,19 @@
+[![CRAN status](https://www.r-pkg.org/badges/version/Rtwalk)](https://CRAN.R-project.org/package=Rtwalk)
+
 # Rtwalk: An MCMC Sampler Using the t-walk Algorithm
 
 `Rtwalk` is an R implementation of the **t-walk**, a general-purpose Markov Chain Monte Carlo (MCMC) sampler for continuous distributions, ideal for Bayesian inference problems.
 
 ## Overview
 
-This package provides a implementation of the t-walk algorithm, as originally proposed by Christen & Fox (2010). The t-walk is a robust, self-adjusting MCMC sampler, which means it does not require the tedious manual tuning of proposal parameters. It is designed to efficiently explore a wide range of target distributions, maintaining good performance even in high-dimensional or multimodal problems.
+This package provides an implementation of the t-walk algorithm, as originally proposed by Christen & Fox (2010). The t-walk is a robust, self-adjusting MCMC sampler, which means it does not require the tedious manual tuning of proposal parameters. It is designed to efficiently explore a wide range of target distributions, maintaining good performance even in high-dimensional or multimodal problems.
 
 ## Installation
 
-You can install the development version of `Rtwalk` from GitHub using the `devtools` package:
+The stable version of Rtwalk is available on CRAN and can be installed with:
 
 ```r
-# If you don't have the devtools package, install it first
-# install.packages("devtools")
-
-devtools::install_github("rodrigosqrt3/Rtwalk", build_vignettes = TRUE)
+install.packages("Rtwalk")
 ```
 
 ## Example Usage
