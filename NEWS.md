@@ -1,3 +1,8 @@
+# Rtwalk 2.0.2
+
+* Added a comprehensive unit test suite using `testthat`, achieving 100% test coverage.
+* Added `testthat` and `covr` to Suggested dependencies.
+
 # Rtwalk 2.0.1
 
 * Added S3 methods for `print()` and `summary()` for t-walk output objects.
