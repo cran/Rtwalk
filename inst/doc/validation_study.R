@@ -26,16 +26,16 @@ BURN_FRAC <- 0.2
 # --- TEST 1: Standard Univariate Normal ---
 log_posterior_1 <- function(x) dnorm(x, log = TRUE)
 result_1 <- twalk(log_posterior_1, n_iter = N_ITER_VIGNETTE, x0 = -2, xp0 = 2)
-calculate_diagnostics(result_1$all_samples, BURN_FRAC, "theta", "Standard Normal")
-visualize_results(result_1$all_samples, 0, "Test 1: Standard Normal")
+calculate_diagnostics(result_1$samples, BURN_FRAC, "theta", "Standard Normal")
+visualize_results(result_1$samples, 0, "Test 1: Standard Normal")
 
 # --- TEST 2: Correlated Bivariate Normal ---
 true_mean_2 <- c(1, -0.5)
 true_cov_2 <- matrix(c(4, 0.7*2*1.5, 0.7*2*1.5, 2.25), 2, 2)
 log_posterior_2 <- function(x) mvtnorm::dmvnorm(x, mean = true_mean_2, sigma = true_cov_2, log = TRUE)
 result_2 <- twalk(log_posterior_2, n_iter = N_ITER_VIGNETTE, x0 = c(0,0), xp0 = c(2,-1))
-calculate_diagnostics(result_2$all_samples, BURN_FRAC, c("theta1", "theta2"), "Bivariate Normal")
-visualize_results(result_2$all_samples, true_mean_2, "Test 2: Bivariate Normal", true_covariance = true_cov_2)
+calculate_diagnostics(result_2$samples, BURN_FRAC, c("theta1", "theta2"), "Bivariate Normal")
+visualize_results(result_2$samples, true_mean_2, "Test 2: Bivariate Normal", true_covariance = true_cov_2)
 
 # --- TEST 3: Funnel Distribution ---
 log_posterior_3 <- function(x) {
@@ -46,8 +46,8 @@ log_posterior_3 <- function(x) {
   return(log_prior_x1 + log_lik_x2)
 }
 result_3 <- twalk(log_posterior_3, n_iter = N_ITER_VIGNETTE, x0 = c(-1.5, -0.2), xp0 = c(1.5, -0.2))
-calculate_diagnostics(result_3$all_samples, BURN_FRAC, c("theta1", "theta2"), "Funnel")
-visualize_results(result_3$all_samples, NULL, "Test 3: Funnel")
+calculate_diagnostics(result_3$samples, BURN_FRAC, c("theta1", "theta2"), "Funnel")
+visualize_results(result_3$samples, NULL, "Test 3: Funnel")
 
 # --- TEST 4: Rosenbrock Distribution ---
 log_posterior_4 <- function(x) {
@@ -56,9 +56,9 @@ log_posterior_4 <- function(x) {
   k <- 1 / 20 
   return(-k * (100 * (x2 - x1^2)^2 + (1 - x1)^2))
 }
-result_4 <- twalk(log_posterior_4, n_iter = 100000, x0 = c(0,0), xp0 = c(-1,1))
-calculate_diagnostics(result_4$all_samples, BURN_FRAC, c("theta1", "theta2"), "Rosenbrock")
-visualize_results(result_4$all_samples, c(1,1), "Test 4: Rosenbrock")
+result_4 <- twalk(log_posterior_4, n_iter = N_ITER_VIGNETTE, x0 = c(0,0), xp0 = c(-1,1))
+calculate_diagnostics(result_4$samples, BURN_FRAC, c("theta1", "theta2"), "Rosenbrock")
+visualize_results(result_4$samples, c(1,1), "Test 4: Rosenbrock")
 
 # --- TEST 5: Gaussian Mixture ---
 weight1 <- 0.7; mean1 <- c(6, 0); sigma1_1 <- 4; sigma1_2 <- 5; rho1 <- 0.8
@@ -68,33 +68,39 @@ weight2 <- 0.3; mean2 <- c(-3, 10); sigma2_1 <- 1; sigma2_2 <- 1; rho2 <- 0.1
 cov2 <- matrix(c(sigma2_1^2, rho2*sigma2_1*sigma2_2, rho2*sigma2_1*sigma2_2, sigma2_2^2), nrow=2)
 
 log_posterior_5 <- function(x) {
-  log(weight1 * mvtnorm::dmvnorm(x, mean1, cov1) + weight2 * mvtnorm::dmvnorm(x, mean2, cov2))
+  log_component_1 <- log(weight1) + mvtnorm::dmvnorm(x, mean1, cov1, log = TRUE)
+  log_component_2 <- log(weight2) + mvtnorm::dmvnorm(x, mean2, cov2, log = TRUE)
+  max_log <- max(log_component_1, log_component_2)
+
+  max_log + log(
+    exp(log_component_1 - max_log) + exp(log_component_2 - max_log)
+  )
 }
 
-result_5 <- twalk(log_posterior_5, n_iter = 100000, x0 = mean1, xp0 = mean2)
-calculate_diagnostics(result_5$all_samples, BURN_FRAC, c("theta1", "theta2"), "Gaussian Mixture")
-visualize_results(result_5$all_samples, NULL, "Test 5: Gaussian Mixture")
+result_5 <- twalk(log_posterior_5, n_iter = N_ITER_VIGNETTE, x0 = mean1, xp0 = mean2)
+calculate_diagnostics(result_5$samples, BURN_FRAC, c("theta1", "theta2"), "Gaussian Mixture")
+visualize_results(result_5$samples, NULL, "Test 5: Gaussian Mixture")
 
 # --- TEST 6: High Dimensionality (10D) ---
 n_dim_6 <- 10; true_mean_6 <- 1:n_dim_6; rho <- 0.7
 true_cov_6 <- matrix(rho^abs(outer(1:n_dim_6, 1:n_dim_6, "-")), n_dim_6, n_dim_6)
 log_posterior_6 <- function(x) mvtnorm::dmvnorm(x, mean = true_mean_6, sigma = true_cov_6, log = TRUE)
 result_6 <- twalk(log_posterior_6, n_iter = N_ITER_VIGNETTE, x0 = rep(0, n_dim_6), xp0 = rep(2, n_dim_6))
-calculate_diagnostics(result_6$all_samples, BURN_FRAC, paste0("theta", 1:n_dim_6), "10D Normal")
-visualize_results(result_6$all_samples, true_mean_6, "Test 6: 10D Normal")
+calculate_diagnostics(result_6$samples, BURN_FRAC, paste0("theta", 1:n_dim_6), "10D Normal")
+visualize_results(result_6$samples, true_mean_6, "Test 6: 10D Normal")
 
 # --- TEST 7: Bayesian Logistic Regression ---
 set.seed(123); n_obs <- 2000
 true_beta <- c(0.5, -1.2, 0.8)
 X <- cbind(1, rnorm(n_obs, 0, 1), rnorm(n_obs, 0, 1.5))
-eta <- X %*% true_beta; prob <- 1 / (1 + exp(-eta)); y <- rbinom(n_obs, 1, prob)
+eta <- X %*% true_beta; prob <- plogis(eta); y <- rbinom(n_obs, 1, prob)
 log_posterior_7 <- function(beta, X, y) { 
   eta <- X %*% beta
-  log_lik <- sum(y * eta - log(1 + exp(eta)))
+  log_lik <- sum(y * eta - pmax(eta, 0) - log1p(exp(-abs(eta))))
   log_prior <- sum(dnorm(beta, 0, 5, log = TRUE))
   return(log_lik + log_prior) 
 }
 result_7 <- twalk(log_posterior_7, n_iter = N_ITER_VIGNETTE, x0 = c(0,0,0), xp0 = c(0.2,-0.2,0.1), X = X, y = y)
-calculate_diagnostics(result_7$all_samples, BURN_FRAC, c("beta0", "beta1", "beta2"), "Logistic Regression")
-visualize_results(result_7$all_samples, true_beta, "Test 7: Logistic Regression")
+calculate_diagnostics(result_7$samples, BURN_FRAC, c("beta0", "beta1", "beta2"), "Logistic Regression")
+visualize_results(result_7$samples, true_beta, "Test 7: Logistic Regression")
 

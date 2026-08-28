@@ -1,4 +1,4 @@
-[![CRAN status](https://www.r-pkg.org/badges/version/Rtwalk)](https://CRAN.R-project.org/package=Rtwalk) [![R-CMD-check](https://github.com/rodrigosqrt3/Rtwalk/actions/workflows/r.yml/badge.svg)](https://github.com/rodrigosqrt3/Rtwalk/actions/workflows/r.yml)
+[![CRAN status](https://www.r-pkg.org/badges/version/Rtwalk)](https://CRAN.R-project.org/package=Rtwalk) [![R-CMD-check](https://github.com/rodrigosqrt3/Rtwalk/actions/workflows/r.yml/badge.svg)](https://github.com/rodrigosqrt3/Rtwalk/actions/workflows/r.yml) [![Codecov test coverage](https://codecov.io/github/rodrigosqrt3/Rtwalk/graph/badge.svg)](https://app.codecov.io/github/rodrigosqrt3/Rtwalk)
 
 # Rtwalk: An MCMC Sampler Using the t-walk Algorithm
 
@@ -7,6 +7,10 @@
 ## Overview
 
 This package provides an implementation of the t-walk algorithm, as originally proposed by Christen & Fox (2010). The t-walk is a robust, self-adjusting MCMC sampler, which means it does not require the tedious manual tuning of proposal parameters. It is designed to efficiently explore a wide range of target distributions, maintaining good performance even in high-dimensional or multimodal problems.
+
+The implementation supports reproducible sequential and parallel chains,
+convergence summaries, visualization helpers, constrained parameter spaces,
+and numerically stable Metropolis--Hastings acceptance probabilities.
 
 ## Installation
 
@@ -26,7 +30,13 @@ library(Rtwalk)
 # Define the log-posterior density of the target distribution
 # In this case, a mixture of two normal distributions
 log_posterior_bimodal <- function(x) {
-  log(0.5 * dnorm(x, mean = -3, sd = 0.5) + 0.5 * dnorm(x, mean = 3, sd = 0.5))
+  log_component_1 <- log(0.5) + dnorm(x, mean = -3, sd = 0.5, log = TRUE)
+  log_component_2 <- log(0.5) + dnorm(x, mean = 3, sd = 0.5, log = TRUE)
+  max_log <- max(log_component_1, log_component_2)
+
+  max_log + log(
+    exp(log_component_1 - max_log) + exp(log_component_2 - max_log)
+  )
 }
 
 initial_point_1 <- -3
@@ -39,8 +49,12 @@ result <- twalk(
   xp0 = initial_point_2
 )
 
-burnin <- nrow(result$all_samples) * 0.2
-samples <- result$all_samples[-(1:burnin), ]
+burnin <- floor(nrow(result$samples) * 0.2)
+samples <- result$samples[
+  seq.int(burnin + 1L, nrow(result$samples)),
+  ,
+  drop = FALSE
+]
 
 par(mfrow = c(1, 2))
 hist(samples, breaks = 50, freq = FALSE, 
@@ -49,6 +63,43 @@ lines(density(samples), col = "blue", lwd = 2)
 
 plot(samples, type = 'l', col = "grey30", 
      main = "Trace Plot", xlab = "Iteration")
+```
+
+The primary time-ordered trajectory is stored in `result$samples`. The
+auxiliary t-walk trajectory is available as `result$companion_samples`.
+`result$all_samples` is retained for backward compatibility, but should not be
+interpreted as one time-ordered chain.
+
+Acceptance and movement can be inspected separately:
+
+```r
+unlist(result[c("acceptance_rate", "move_rate", "no_move_rate")])
+```
+
+Here, `acceptance_rate` is the Metropolis--Hastings acceptance rate,
+`move_rate` counts accepted proposals that changed the state, and
+`no_move_rate` counts accepted identity proposals from the original t-walk
+transition kernel.
+
+## Parallel chains
+
+Multiple reproducible chains can be run in parallel. Calling `set.seed()`
+before `twalk()` controls the parallel random-number streams:
+
+```r
+set.seed(123)
+
+parallel_result <- twalk(
+  log_posterior = log_posterior_bimodal,
+  n_iter = 25000,
+  x0 = initial_point_1,
+  xp0 = initial_point_2,
+  n_chains = 2,
+  n_cores = 2,
+  show_progress = FALSE
+)
+
+summary(parallel_result, burnin_frac = 0.2)
 ```
 
 ## Citation
