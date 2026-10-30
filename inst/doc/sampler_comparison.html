@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Benchmarking the t-walk against other general-purpose samplers</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Benchmarking the t-walk against other
+general-purpose samplers</h1>
+
+
+
+<blockquote>
+<p>This vignette is precomputed: running it takes several minutes, so
+the results shown here were generated once with the code it contains
+(see the appendix) and are not recomputed when the package is
+checked.</p>
+</blockquote>
+<div id="purpose" class="section level2">
+<h2>Purpose</h2>
+<p>The t-walk (Christen &amp; Fox, 2010) is designed to be a
+<em>black-box</em> sampler: the user supplies a log density and two
+starting points, and nothing else. This vignette asks how it compares
+with other samplers that also require little or no problem-specific
+input, on a range of targets with known answers.</p>
+<p>The comparison tries to be fair rather than flattering. All samplers
+get the same budget of log-density evaluations, start from the same
+dispersed points, and are judged by the same diagnostics. We also
+include a deliberately <em>unfair</em> competitor, random-walk
+Metropolis tuned with the true covariance of the target, as an
+unattainable best case for random-walk methods. Gradient-based samplers
+such as Hamiltonian Monte Carlo and NUTS are out of scope: they require
+the gradient of the log density, which is exactly what a black-box
+sampler does not assume.</p>
+</div>
+<div id="samplers" class="section level2">
+<h2>Samplers</h2>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Label</th>
+<th>Method</th>
+<th>What the user must provide</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>t-walk</code></td>
+<td><code>Rtwalk::twalk()</code> with the default settings of Christen
+&amp; Fox (2010)</td>
+<td>two starting points</td>
+</tr>
+<tr class="even">
+<td><code>RWM naive</code></td>
+<td>random-walk Metropolis, proposal <span class="math inline">\(N(0,
+2.38^2 I_d / d)\)</span></td>
+<td>a proposal scale (here a generic guess)</td>
+</tr>
+<tr class="odd">
+<td><code>RWM oracle</code></td>
+<td>random-walk Metropolis, proposal <span class="math inline">\(N(0,
+2.38^2 \Sigma / d)\)</span> with <span class="math inline">\(\Sigma\)</span> the <strong>true</strong>
+posterior covariance (Gelman, Roberts &amp; Gilks, 1996)</td>
+<td>the answer</td>
+</tr>
+<tr class="even">
+<td><code>AM</code></td>
+<td>adaptive Metropolis (Haario, Saksman &amp; Tamminen, 2001): starts
+as <code>RWM naive</code>, then uses <span class="math inline">\(2.38^2(\hat\Sigma_t + \varepsilon I)/d\)</span>
+after <span class="math inline">\(t_0 = 1000\)</span> iterations</td>
+<td>adaptation settings</td>
+</tr>
+<tr class="odd">
+<td><code>Ensemble</code></td>
+<td>affine-invariant ensemble sampler with the stretch move, <span class="math inline">\(a = 2\)</span> (Goodman &amp; Weare, 2010), <span class="math inline">\(L = \max(2d, 8)\)</span> walkers</td>
+<td>number of walkers, <span class="math inline">\(L\)</span> starting
+points</td>
+</tr>
+<tr class="even">
+<td><code>Slice</code></td>
+<td>univariate slice sampling with stepping out and shrinkage, applied
+coordinate by coordinate (Neal, 2003), <span class="math inline">\(w =
+1\)</span>, <span class="math inline">\(m = 100\)</span></td>
+<td>an initial width <span class="math inline">\(w\)</span></td>
+</tr>
+</tbody>
+</table>
+<p><code>RWM naive</code>, <code>AM</code>, <code>Ensemble</code> and
+<code>Slice</code> are written in plain R and are listed in the
+appendix. Two of them share the t-walk’s design philosophy: the ensemble
+sampler is invariant under affine transformations, and the slice sampler
+adapts its step to the local scale.</p>
+</div>
+<div id="targets" class="section level2">
+<h2>Targets</h2>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Target</th>
+<th><span class="math inline">\(d\)</span></th>
+<th>Difficulty</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Correlated Gaussian</td>
+<td>10</td>
+<td><span class="math inline">\(\Sigma_{ij} = 0.95^{\lvert i-j
+\rvert}\)</span>; condition number <span class="math inline">\(\approx
+300\)</span></td>
+</tr>
+<tr class="even">
+<td>Badly scaled Gaussian</td>
+<td>10</td>
+<td>independent, standard deviations from <span class="math inline">\(10^{-2}\)</span> to <span class="math inline">\(10^{2}\)</span></td>
+</tr>
+<tr class="odd">
+<td>Rosenbrock</td>
+<td>2</td>
+<td>the curved “banana” of Christen &amp; Fox (2010, Fig. 3b), <span class="math inline">\(\pi(x, y) \propto \exp\{-\tfrac{1}{20}[100(y -
+x^2)^2 + (1 - x)^2]\}\)</span></td>
+</tr>
+<tr class="even">
+<td>Bimodal mixture</td>
+<td>2</td>
+<td>the two contrasting modes of Christen &amp; Fox (2010, Fig. 3a),
+weights 0.7 / 0.3</td>
+</tr>
+<tr class="odd">
+<td>Neal’s funnel</td>
+<td>5</td>
+<td><span class="math inline">\(v \sim N(0, 3^2)\)</span>, <span class="math inline">\(x_i \mid v \sim N(0, e^{v})\)</span>, <span class="math inline">\(i = 1, \dots, 4\)</span> (Neal, 2003)</td>
+</tr>
+<tr class="even">
+<td>Logistic regression</td>
+<td>8</td>
+<td><code>MASS::Pima.tr</code> (diabetes, <span class="math inline">\(n
+= 200\)</span>), 7 standardized predictors and an intercept, <span class="math inline">\(N(0, 5^2)\)</span> priors</td>
+</tr>
+</tbody>
+</table>
+<p>All targets have a known answer. For the Rosenbrock density, <span class="math inline">\(x \sim N(1, 10)\)</span> and <span class="math inline">\(y \mid x \sim N(x^2, 0.1)\)</span>. For the
+funnel, <span class="math inline">\(E(v) = 0\)</span> and <span class="math inline">\(\mathrm{Var}(v) = 9\)</span>. For the logistic
+regression, the reference posterior moments come from importance
+sampling with <span class="math inline">\(2 \times 10^5\)</span> draws
+from a multivariate-<span class="math inline">\(t_5\)</span>
+approximation centred at the posterior mode, a method independent of all
+the samplers compared.</p>
+</div>
+<div id="protocol" class="section level2">
+<h2>Protocol</h2>
+<ul>
+<li>Budget: <span class="math inline">\(10^5\)</span> log-density
+evaluations per run. The t-walk evaluates the target once per iteration
+(except for identity proposals), so it runs <span class="math inline">\(10^5\)</span> iterations; the ensemble runs <span class="math inline">\(10^5 / L\)</span> sweeps; the slice sampler runs
+until its budget is spent.</li>
+<li>Five independent replicates per sampler and target. In each
+replicate all samplers start from the same points, drawn from an
+overdispersed approximation of the target (for the mixture, near either
+mode at random).</li>
+<li>The first 20% of each run is discarded as burn-in.</li>
+<li>Efficiency: the minimum over parameters of the rank-normalized bulk
+effective sample size (Vehtari et al., 2021), per 1000 evaluations. For
+the t-walk, only the primary trajectory <code>$samples</code> is used, a
+conservative choice. For the ensemble, the walkers are treated as chains
+in the multi-chain ESS estimator, which averages autocovariances over
+walkers; this is the estimator recommended for ensemble samplers by
+Goodman &amp; Weare
+<ol start="2010" style="list-style-type: decimal">
+<li>and Foreman-Mackey et al. (2013). Because walkers interact, it can
+be optimistic, which is one reason we also report accuracy.</li>
+</ol></li>
+<li>Accuracy: the root mean square, over parameters, of the error in the
+posterior mean in units of the posterior standard deviation, and of the
+log-ratio of estimated to true variance.</li>
+</ul>
+<p>The full benchmark (180 runs plus a scaling experiment) took 9.5
+minutes on a laptop. The importance sampling reference for the logistic
+regression had a relative effective sample size of 66%, so its moments
+are accurate to well below the Monte Carlo error of any sampler.</p>
+</div>
+<div id="results" class="section level2">
+<h2>Results</h2>
+<div id="efficiency" class="section level3">
+<h3>Efficiency</h3>
+<p>The table reports the median, over the five replicates, of the
+minimum bulk ESS per 1000 log-density evaluations. Larger is better.</p>
+<table>
+<colgroup>
+<col width="31%" />
+<col width="10%" />
+<col width="14%" />
+<col width="15%" />
+<col width="7%" />
+<col width="12%" />
+<col width="8%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">t-walk</th>
+<th align="right">RWM naive</th>
+<th align="right">RWM oracle</th>
+<th align="right">AM</th>
+<th align="right">Ensemble</th>
+<th align="right">Slice</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Correlated Gaussian</td>
+<td align="right">0.1</td>
+<td align="right">0.0</td>
+<td align="right">20.4</td>
+<td align="right">23.1</td>
+<td align="right">5.0</td>
+<td align="right">0.1</td>
+</tr>
+<tr class="even">
+<td align="left">Badly scaled Gaussian</td>
+<td align="right">4.1</td>
+<td align="right">0.0</td>
+<td align="right">22.4</td>
+<td align="right">14.4</td>
+<td align="right">3.9</td>
+<td align="right">0.0</td>
+</tr>
+<tr class="odd">
+<td align="left">Rosenbrock</td>
+<td align="right">0.2</td>
+<td align="right">0.0</td>
+<td align="right">2.0</td>
+<td align="right">1.9</td>
+<td align="right">0.1</td>
+<td align="right">0.1</td>
+</tr>
+<tr class="even">
+<td align="left">Bimodal mixture</td>
+<td align="right">0.4</td>
+<td align="right">1.7</td>
+<td align="right">18.7</td>
+<td align="right">17.6</td>
+<td align="right">0.3</td>
+<td align="right">7.2</td>
+</tr>
+<tr class="odd">
+<td align="left">Neal’s funnel</td>
+<td align="right">0.3</td>
+<td align="right">0.6</td>
+<td align="right">0.2</td>
+<td align="right">0.6</td>
+<td align="right">1.9</td>
+<td align="right">0.3</td>
+</tr>
+<tr class="even">
+<td align="left">Logistic regression</td>
+<td align="right">3.0</td>
+<td align="right">0.0</td>
+<td align="right">29.2</td>
+<td align="right">27.4</td>
+<td align="right">6.1</td>
+<td align="right">8.1</td>
+</tr>
+</tbody>
+</table>
+<div class="figure">
+<img src="data:image/png;base64,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" alt="Minimum bulk ESS per 1000 log-density evaluations, one point per replicate (log scale)." width="100%" />
+<p class="caption">
+Minimum bulk ESS per 1000 log-density evaluations, one point per
+replicate (log scale).
+</p>
+</div>
+<p>Each point is one replicate; values below <span class="math inline">\(10^{-2}\)</span> indicate a sampler that
+essentially did not mix within the budget. Wall-clock time is reported
+separately below, because it reflects implementation more than
+algorithm.</p>
+</div>
+<div id="accuracy" class="section level3">
+<h3>Accuracy</h3>
+<p>Efficiency estimates are only meaningful if the chains actually
+explore the target. The next two tables report the median RMS error of
+the posterior means (in posterior standard deviations) and of the log
+variances.</p>
+<table style="width:100%;">
+<colgroup>
+<col width="30%" />
+<col width="9%" />
+<col width="14%" />
+<col width="15%" />
+<col width="8%" />
+<col width="12%" />
+<col width="8%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">t-walk</th>
+<th align="right">RWM naive</th>
+<th align="right">RWM oracle</th>
+<th align="right">AM</th>
+<th align="right">Ensemble</th>
+<th align="right">Slice</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Correlated Gaussian</td>
+<td align="right">0.357</td>
+<td align="right">0.089</td>
+<td align="right">0.019</td>
+<td align="right">0.018</td>
+<td align="right">0.012</td>
+<td align="right">0.198</td>
+</tr>
+<tr class="even">
+<td align="left">Badly scaled Gaussian</td>
+<td align="right">0.038</td>
+<td align="right">1.152</td>
+<td align="right">0.015</td>
+<td align="right">0.022</td>
+<td align="right">0.034</td>
+<td align="right">0.160</td>
+</tr>
+<tr class="odd">
+<td align="left">Rosenbrock</td>
+<td align="right">0.221</td>
+<td align="right">0.341</td>
+<td align="right">0.070</td>
+<td align="right">0.064</td>
+<td align="right">1.039</td>
+<td align="right">0.437</td>
+</tr>
+<tr class="even">
+<td align="left">Bimodal mixture</td>
+<td align="right">0.041</td>
+<td align="right">0.490</td>
+<td align="right">0.020</td>
+<td align="right">0.019</td>
+<td align="right">0.046</td>
+<td align="right">0.500</td>
+</tr>
+<tr class="odd">
+<td align="left">Neal’s funnel</td>
+<td align="right">0.056</td>
+<td align="right">0.171</td>
+<td align="right">0.299</td>
+<td align="right">0.271</td>
+<td align="right">0.050</td>
+<td align="right">0.083</td>
+</tr>
+<tr class="even">
+<td align="left">Logistic regression</td>
+<td align="right">0.049</td>
+<td align="right">0.258</td>
+<td align="right">0.016</td>
+<td align="right">0.016</td>
+<td align="right">0.031</td>
+<td align="right">0.043</td>
+</tr>
+</tbody>
+</table>
+<table style="width:100%;">
+<colgroup>
+<col width="30%" />
+<col width="9%" />
+<col width="14%" />
+<col width="15%" />
+<col width="8%" />
+<col width="12%" />
+<col width="8%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">t-walk</th>
+<th align="right">RWM naive</th>
+<th align="right">RWM oracle</th>
+<th align="right">AM</th>
+<th align="right">Ensemble</th>
+<th align="right">Slice</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Correlated Gaussian</td>
+<td align="right">0.743</td>
+<td align="right">0.401</td>
+<td align="right">0.016</td>
+<td align="right">0.014</td>
+<td align="right">0.037</td>
+<td align="right">0.264</td>
+</tr>
+<tr class="even">
+<td align="left">Badly scaled Gaussian</td>
+<td align="right">0.056</td>
+<td align="right">4.427</td>
+<td align="right">0.016</td>
+<td align="right">0.025</td>
+<td align="right">0.032</td>
+<td align="right">0.102</td>
+</tr>
+<tr class="odd">
+<td align="left">Rosenbrock</td>
+<td align="right">0.589</td>
+<td align="right">0.712</td>
+<td align="right">0.325</td>
+<td align="right">0.327</td>
+<td align="right">1.597</td>
+<td align="right">1.852</td>
+</tr>
+<tr class="even">
+<td align="left">Bimodal mixture</td>
+<td align="right">0.029</td>
+<td align="right">0.368</td>
+<td align="right">0.015</td>
+<td align="right">0.017</td>
+<td align="right">0.027</td>
+<td align="right">0.564</td>
+</tr>
+<tr class="odd">
+<td align="left">Neal’s funnel</td>
+<td align="right">1.608</td>
+<td align="right">1.711</td>
+<td align="right">1.086</td>
+<td align="right">0.677</td>
+<td align="right">0.658</td>
+<td align="right">1.065</td>
+</tr>
+<tr class="even">
+<td align="left">Logistic regression</td>
+<td align="right">0.068</td>
+<td align="right">0.606</td>
+<td align="right">0.019</td>
+<td align="right">0.027</td>
+<td align="right">0.037</td>
+<td align="right">0.042</td>
+</tr>
+</tbody>
+</table>
+<p>For the bimodal mixture, the decisive question is whether a sampler
+moves between the modes. The figure shows the estimated weight of the
+minor, peaked mode (true value 0.3) in each replicate.</p>
+<div class="figure">
+<img src="data:image/png;base64,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" alt="Estimated weight of the minor mode of the bimodal mixture in each replicate; the dashed line is the true weight, 0.3." width="100%" />
+<p class="caption">
+Estimated weight of the minor mode of the bimodal mixture in each
+replicate; the dashed line is the true weight, 0.3.
+</p>
+</div>
+</div>
+<div id="curved-and-funnel-shaped-targets" class="section level3">
+<h3>Curved and funnel-shaped targets</h3>
+<p>Global summaries hide <em>where</em> a sampler fails. The draws from
+the first replicate of the Rosenbrock and funnel targets show it
+directly.</p>
+<div class="figure">
+<img src="data:image/png;base64,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" alt="Draws from the first replicate on the Rosenbrock (top) and funnel (bottom) targets." width="100%" />
+<p class="caption">
+Draws from the first replicate on the Rosenbrock (top) and funnel
+(bottom) targets.
+</p>
+</div>
+<p>In the funnel (bottom row, true <span class="math inline">\(v\)</span> ranging over roughly <span class="math inline">\(\pm 6\)</span>, dotted lines), the neck at
+negative <span class="math inline">\(v\)</span> is very narrow and the
+mouth at positive <span class="math inline">\(v\)</span> very wide; no
+single step size suits both.</p>
+</div>
+<div id="invariance-to-scale" class="section level3">
+<h3>Invariance to scale</h3>
+<p>Because the t-walk is invariant to changes of scale (Christen &amp;
+Fox, 2010, Theorem 1, and approximately so for coordinate-wise
+rescaling), its performance should not depend on how badly scaled the
+target is. We sampled independent 10-dimensional Gaussians whose
+standard deviations span <span class="math inline">\(10^0, 10^1, \dots,
+10^4\)</span> (three replicates of <span class="math inline">\(5 \times
+10^4\)</span> evaluations).</p>
+<div class="figure">
+<img src="data:image/png;base64,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" alt="Minimum bulk ESS per 1000 evaluations as the ratio between the largest and smallest scale of the target grows." width="100%" />
+<p class="caption">
+Minimum bulk ESS per 1000 evaluations as the ratio between the largest
+and smallest scale of the target grows.
+</p>
+</div>
+</div>
+<div id="strong-correlation" class="section level3">
+<h3>Strong correlation</h3>
+<p>The correlated Gaussian is the t-walk’s weakest case in the table
+above. To see how this depends on the strength of the correlation, we
+ran the t-walk on 10-dimensional Gaussians with <span class="math inline">\(\Sigma_{ij} = \rho^{\lvert i-j \rvert}\)</span>
+(three replicates of <span class="math inline">\(10^5\)</span>
+evaluations each), with adaptive Metropolis as a reference.</p>
+<table>
+<caption>Median minimum bulk ESS per 1000 evaluations, 10-dimensional
+AR(1) Gaussians.</caption>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">AM</th>
+<th align="right">t-walk</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">0.00</td>
+<td align="right">23.65</td>
+<td align="right">3.92</td>
+</tr>
+<tr class="even">
+<td align="left">0.50</td>
+<td align="right">23.33</td>
+<td align="right">1.66</td>
+</tr>
+<tr class="odd">
+<td align="left">0.80</td>
+<td align="right">23.87</td>
+<td align="right">0.21</td>
+</tr>
+<tr class="even">
+<td align="left">0.90</td>
+<td align="right">23.39</td>
+<td align="right">0.10</td>
+</tr>
+<tr class="odd">
+<td align="left">0.95</td>
+<td align="right">22.11</td>
+<td align="right">0.10</td>
+</tr>
+</tbody>
+</table>
+<p>The t-walk’s efficiency falls by more than an order of magnitude
+between <span class="math inline">\(\rho = 0.5\)</span> and <span class="math inline">\(\rho = 0.95\)</span>, while adaptive Metropolis,
+which learns a global linear transformation, is unaffected. This is the
+limitation that Christen &amp; Fox (2010, Section 5) report for highly
+correlated high-dimensional posteriors.</p>
+</div>
+<div id="wall-clock-time" class="section level3">
+<h3>Wall-clock time</h3>
+<p>The median ESS per second is shown for completeness. It strongly
+favours the t-walk, whose kernel is compiled C++, over the competitors
+written in plain R for this vignette; it should therefore not be read as
+a comparison of algorithms. When the log density is expensive, as in
+most real applications, evaluations dominate the cost and the ESS per
+evaluation above is the relevant measure.</p>
+<table>
+<colgroup>
+<col width="31%" />
+<col width="10%" />
+<col width="14%" />
+<col width="15%" />
+<col width="5%" />
+<col width="13%" />
+<col width="8%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">t-walk</th>
+<th align="right">RWM naive</th>
+<th align="right">RWM oracle</th>
+<th align="right">AM</th>
+<th align="right">Ensemble</th>
+<th align="right">Slice</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Correlated Gaussian</td>
+<td align="right">17</td>
+<td align="right">2</td>
+<td align="right">2119</td>
+<td align="right">508</td>
+<td align="right">296</td>
+<td align="right">14</td>
+</tr>
+<tr class="even">
+<td align="left">Badly scaled Gaussian</td>
+<td align="right">1315</td>
+<td align="right">2</td>
+<td align="right">3465</td>
+<td align="right">374</td>
+<td align="right">280</td>
+<td align="right">9</td>
+</tr>
+<tr class="odd">
+<td align="left">Rosenbrock</td>
+<td align="right">105</td>
+<td align="right">7</td>
+<td align="right">321</td>
+<td align="right">47</td>
+<td align="right">7</td>
+<td align="right">17</td>
+</tr>
+<tr class="even">
+<td align="left">Bimodal mixture</td>
+<td align="right">51</td>
+<td align="right">145</td>
+<td align="right">2109</td>
+<td align="right">473</td>
+<td align="right">18</td>
+<td align="right">906</td>
+</tr>
+<tr class="odd">
+<td align="left">Neal’s funnel</td>
+<td align="right">47</td>
+<td align="right">51</td>
+<td align="right">15</td>
+<td align="right">13</td>
+<td align="right">93</td>
+<td align="right">45</td>
+</tr>
+<tr class="even">
+<td align="left">Logistic regression</td>
+<td align="right">64</td>
+<td align="right">1</td>
+<td align="right">561</td>
+<td align="right">277</td>
+<td align="right">92</td>
+<td align="right">168</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="discussion" class="section level2">
+<h2>Discussion</h2>
+<p>The results do not support a single winner, and they do not support
+the view that the t-walk is uniformly the most efficient sampler. They
+do show a consistent pattern.</p>
+<p><strong>Efficiency per evaluation.</strong> On every target except
+Neal’s funnel, adaptive Metropolis and the oracle random-walk Metropolis
+are the most efficient samplers, often by an order of magnitude or more:
+on the logistic regression, for instance, the median minimum ESS per
+1000 evaluations is 27.4 for adaptive Metropolis against 3 for the
+t-walk. With <span class="math inline">\(10^5\)</span> evaluations in at
+most 10 dimensions, adaptive Metropolis has ample time to learn the
+global covariance, after which it behaves like the oracle. The t-walk is
+typically in the middle of the group, alongside the ensemble and slice
+samplers. It is ahead of naive random-walk Metropolis on four of the six
+targets; on the mixture, the naive sampler’s larger ESS is misleading
+(see below), and on the funnel both are poor. Christen &amp; Fox (2010,
+Section 4) found the t-walk within a small factor of optimally tuned
+random-walk Metropolis on independent targets; the gap we observe is
+larger, especially on the correlated targets.</p>
+<p><strong>Robustness without tuning.</strong> The strongest result for
+the t-walk is the scaling experiment: its efficiency is unchanged when
+the scales of the coordinates span four orders of magnitude, as
+predicted by its invariance (Christen &amp; Fox, 2010, Theorem 1). The
+affine-invariant ensemble sampler shares this property. Naive
+random-walk Metropolis collapses beyond a ratio of 10, the slice sampler
+with a fixed width degrades steadily, and adaptive Metropolis degrades
+beyond a ratio of <span class="math inline">\(10^2\)</span>, presumably
+because its initial, non-adapted phase barely moves, so the covariance
+it learns from is poor. Adaptation is powerful when it works, but it
+needs a reasonable starting proposal; the t-walk needs nothing.</p>
+<p><strong>Multimodality.</strong> On the bimodal mixture, the samplers
+with a high within-mode ESS are not necessarily right. Naive random-walk
+Metropolis and the slice sampler often stay in the mode where they
+start, and their ESS values describe that mode only. The number of
+replicates (out of five) whose estimated weight of the minor mode was
+within 0.1 of the true 0.3 was t-walk: 4; RWM naive: 0; RWM oracle: 5;
+AM: 5; Ensemble: 4; Slice: 0. The t-walk switches between the modes,
+through its Hop and Blow moves and the large Traverse steps between the
+two points, without any knowledge of where the modes are.</p>
+<p><strong>Where the t-walk struggles.</strong> Strong correlation in
+moderate dimension is the t-walk’s main weakness, as the correlation
+experiment shows and as Christen &amp; Fox (2010, Section 5)
+acknowledge. The funnel is difficult for every sampler: all of them
+misestimate the variances (median RMS log-variance error between 0.66
+and 1.71), and the t-walk explores the wide mouth of the funnel less
+than the ensemble sampler does. For such targets, reparameterization or
+gradient-based methods are preferable.</p>
+<p><strong>Cost per second.</strong> The t-walk’s compiled kernel makes
+it the fastest sampler per unit of time on cheap targets, but, as noted
+above, this reflects implementation rather than algorithm.</p>
+<p><strong>In practice.</strong> The t-walk is a sound default for
+exploratory analysis and for problems whose scale and correlation
+structure are unknown or vary across the space, which is the setting it
+was designed for. When a posterior is known to be strongly correlated,
+or once a first run has revealed its covariance, a sampler that exploits
+that information will be more efficient.</p>
+<p><strong>Caveats.</strong> The competitors were implemented compactly
+and with standard settings, not optimized. Adaptive Metropolis has
+variants with better finite-sample behaviour (e.g. Roberts &amp;
+Rosenthal, 2009), the ensemble sampler is often run with more walkers,
+and the slice sampler’s width <span class="math inline">\(w\)</span>
+could be adapted. Five replicates give a rough picture of the
+variability, not precise rankings. The conclusions are about black-box
+use, which is the setting the t-walk was designed for.</p>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<ul>
+<li>Christen, J. A. and Fox, C. (2010). A general purpose sampling
+algorithm for continuous distributions (the t-walk). <em>Bayesian
+Analysis</em>, 5(2), 263–282. <a href="doi:10.1214/10-BA603" class="uri">doi:10.1214/10-BA603</a></li>
+<li>Foreman-Mackey, D., Hogg, D. W., Lang, D. and Goodman, J. (2013).
+emcee: The MCMC hammer. <em>Publications of the Astronomical Society of
+the Pacific</em>, 125(925), 306–312.</li>
+<li>Gelman, A., Roberts, G. O. and Gilks, W. R. (1996). Efficient
+Metropolis jumping rules. In <em>Bayesian Statistics 5</em>, 599–607.
+Oxford University Press.</li>
+<li>Goodman, J. and Weare, J. (2010). Ensemble samplers with affine
+invariance. <em>Communications in Applied Mathematics and Computational
+Science</em>, 5(1), 65–80.</li>
+<li>Haario, H., Saksman, E. and Tamminen, J. (2001). An adaptive
+Metropolis algorithm. <em>Bernoulli</em>, 7(2), 223–242.</li>
+<li>Neal, R. M. (2003). Slice sampling. <em>The Annals of
+Statistics</em>, 31(3), 705–767.</li>
+<li>Roberts, G. O. and Rosenthal, J. S. (2009). Examples of adaptive
+MCMC. <em>Journal of Computational and Graphical Statistics</em>, 18(2),
+349–367.</li>
+<li>Vehtari, A., Gelman, A., Simpson, D., Carpenter, B. and Bürkner,
+P.-C. (2021). Rank-normalization, folding, and localization: An improved
+<span class="math inline">\(\widehat{R}\)</span> for assessing
+convergence of MCMC. <em>Bayesian Analysis</em>, 16(2), 667–718.</li>
+</ul>
+</div>
+<div id="appendix-code" class="section level2">
+<h2>Appendix: code</h2>
+<p>The targets:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>make_targets <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  targets <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="co"># Correlated Gaussian</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  d <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>  sigma <span class="ot">&lt;-</span> <span class="fl">0.95</span><span class="sc">^</span><span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>d, <span class="dv">1</span><span class="sc">:</span>d, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>  prec <span class="ot">&lt;-</span> <span class="fu">solve</span>(sigma)</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>  targets<span class="sc">$</span>correlated <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">&quot;Correlated Gaussian&quot;</span>, <span class="at">d =</span> d,</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>    <span class="at">log_post =</span> <span class="cf">function</span>(x) <span class="sc">-</span><span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">drop</span>(<span class="fu">crossprod</span>(x, prec <span class="sc">%*%</span> x)),</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>    <span class="at">mean =</span> <span class="fu">rep</span>(<span class="dv">0</span>, d), <span class="at">var =</span> <span class="fu">rep</span>(<span class="dv">1</span>, d), <span class="at">cov =</span> sigma,</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>    <span class="at">init =</span> <span class="cf">function</span>() <span class="fu">rnorm</span>(d, <span class="dv">0</span>, <span class="dv">2</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>  )</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>  <span class="co"># Badly scaled Gaussian</span></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>  sds <span class="ot">&lt;-</span> <span class="dv">10</span><span class="sc">^</span><span class="fu">seq</span>(<span class="sc">-</span><span class="dv">2</span>, <span class="dv">2</span>, <span class="at">length.out =</span> d)</span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>  targets<span class="sc">$</span>scaled <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">&quot;Badly scaled Gaussian&quot;</span>, <span class="at">d =</span> d,</span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a>    <span class="at">log_post =</span> <span class="cf">function</span>(x) <span class="sc">-</span><span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">sum</span>((x <span class="sc">/</span> sds)<span class="sc">^</span><span class="dv">2</span>),</span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a>    <span class="at">mean =</span> <span class="fu">rep</span>(<span class="dv">0</span>, d), <span class="at">var =</span> sds<span class="sc">^</span><span class="dv">2</span>, <span class="at">cov =</span> <span class="fu">diag</span>(sds<span class="sc">^</span><span class="dv">2</span>),</span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a>    <span class="at">init =</span> <span class="cf">function</span>() <span class="fu">rnorm</span>(d, <span class="dv">0</span>, <span class="dv">2</span> <span class="sc">*</span> sds)</span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a>  )</span>
+<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a>  <span class="co"># Rosenbrock, k = 1/20: x ~ N(1, 10), y | x ~ N(x^2, 0.1)</span></span>
+<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a>  targets<span class="sc">$</span>rosenbrock <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">&quot;Rosenbrock&quot;</span>, <span class="at">d =</span> <span class="dv">2</span>,</span>
+<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a>    <span class="at">log_post =</span> <span class="cf">function</span>(z) <span class="sc">-</span>(<span class="dv">1</span> <span class="sc">/</span> <span class="dv">20</span>) <span class="sc">*</span> (<span class="dv">100</span> <span class="sc">*</span> (z[<span class="dv">2</span>] <span class="sc">-</span> z[<span class="dv">1</span>]<span class="sc">^</span><span class="dv">2</span>)<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">-</span> z[<span class="dv">1</span>])<span class="sc">^</span><span class="dv">2</span>),</span>
+<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a>    <span class="at">mean =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">11</span>), <span class="at">var =</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="fl">240.1</span>),</span>
+<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a>    <span class="at">cov =</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">20</span>, <span class="dv">20</span>, <span class="fl">240.1</span>), <span class="dv">2</span>),</span>
+<span id="cb1-30"><a href="#cb1-30" tabindex="-1"></a>    <span class="at">init =</span> <span class="cf">function</span>() {</span>
+<span id="cb1-31"><a href="#cb1-31" tabindex="-1"></a>      x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span> <span class="sc">*</span> <span class="fu">sqrt</span>(<span class="dv">10</span>))</span>
+<span id="cb1-32"><a href="#cb1-32" tabindex="-1"></a>      <span class="fu">c</span>(x, x<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">2</span> <span class="sc">*</span> <span class="fu">sqrt</span>(<span class="fl">0.1</span>)))</span>
+<span id="cb1-33"><a href="#cb1-33" tabindex="-1"></a>    }</span>
+<span id="cb1-34"><a href="#cb1-34" tabindex="-1"></a>  )</span>
+<span id="cb1-35"><a href="#cb1-35" tabindex="-1"></a></span>
+<span id="cb1-36"><a href="#cb1-36" tabindex="-1"></a>  <span class="co"># Bimodal mixture of Christen &amp; Fox (2010), Fig. 3a</span></span>
+<span id="cb1-37"><a href="#cb1-37" tabindex="-1"></a>  w <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.7</span>, <span class="fl">0.3</span>)</span>
+<span id="cb1-38"><a href="#cb1-38" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">0</span>), <span class="fu">c</span>(<span class="sc">-</span><span class="dv">3</span>, <span class="dv">10</span>))</span>
+<span id="cb1-39"><a href="#cb1-39" tabindex="-1"></a>  cov_of <span class="ot">&lt;-</span> <span class="cf">function</span>(s1, s2, r) <span class="fu">matrix</span>(<span class="fu">c</span>(s1<span class="sc">^</span><span class="dv">2</span>, r <span class="sc">*</span> s1 <span class="sc">*</span> s2, r <span class="sc">*</span> s1 <span class="sc">*</span> s2, s2<span class="sc">^</span><span class="dv">2</span>), <span class="dv">2</span>)</span>
+<span id="cb1-40"><a href="#cb1-40" tabindex="-1"></a>  covs <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="fu">cov_of</span>(<span class="dv">4</span>, <span class="dv">5</span>, <span class="fl">0.8</span>), <span class="fu">cov_of</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="fl">0.1</span>))</span>
+<span id="cb1-41"><a href="#cb1-41" tabindex="-1"></a>  mix_mean <span class="ot">&lt;-</span> w[<span class="dv">1</span>] <span class="sc">*</span> mu[[<span class="dv">1</span>]] <span class="sc">+</span> w[<span class="dv">2</span>] <span class="sc">*</span> mu[[<span class="dv">2</span>]]</span>
+<span id="cb1-42"><a href="#cb1-42" tabindex="-1"></a>  mix_cov <span class="ot">&lt;-</span> w[<span class="dv">1</span>] <span class="sc">*</span> (covs[[<span class="dv">1</span>]] <span class="sc">+</span> <span class="fu">tcrossprod</span>(mu[[<span class="dv">1</span>]])) <span class="sc">+</span></span>
+<span id="cb1-43"><a href="#cb1-43" tabindex="-1"></a>    w[<span class="dv">2</span>] <span class="sc">*</span> (covs[[<span class="dv">2</span>]] <span class="sc">+</span> <span class="fu">tcrossprod</span>(mu[[<span class="dv">2</span>]])) <span class="sc">-</span> <span class="fu">tcrossprod</span>(mix_mean)</span>
+<span id="cb1-44"><a href="#cb1-44" tabindex="-1"></a>  precs <span class="ot">&lt;-</span> <span class="fu">lapply</span>(covs, solve)</span>
+<span id="cb1-45"><a href="#cb1-45" tabindex="-1"></a>  log_consts <span class="ot">&lt;-</span> <span class="fu">vapply</span>(covs, <span class="cf">function</span>(s) <span class="sc">-</span><span class="fu">log</span>(<span class="dv">2</span> <span class="sc">*</span> pi) <span class="sc">-</span> <span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">log</span>(<span class="fu">det</span>(s)), <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb1-46"><a href="#cb1-46" tabindex="-1"></a>  component_logd <span class="ot">&lt;-</span> <span class="cf">function</span>(x, k) {</span>
+<span id="cb1-47"><a href="#cb1-47" tabindex="-1"></a>    delta <span class="ot">&lt;-</span> x <span class="sc">-</span> mu[[k]]</span>
+<span id="cb1-48"><a href="#cb1-48" tabindex="-1"></a>    log_consts[k] <span class="sc">-</span> <span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">sum</span>(delta <span class="sc">*</span> (precs[[k]] <span class="sc">%*%</span> delta))</span>
+<span id="cb1-49"><a href="#cb1-49" tabindex="-1"></a>  }</span>
+<span id="cb1-50"><a href="#cb1-50" tabindex="-1"></a>  targets<span class="sc">$</span>mixture <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb1-51"><a href="#cb1-51" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">&quot;Bimodal mixture&quot;</span>, <span class="at">d =</span> <span class="dv">2</span>,</span>
+<span id="cb1-52"><a href="#cb1-52" tabindex="-1"></a>    <span class="at">log_post =</span> <span class="cf">function</span>(x) {</span>
+<span id="cb1-53"><a href="#cb1-53" tabindex="-1"></a>      a <span class="ot">&lt;-</span> <span class="fu">log</span>(w[<span class="dv">1</span>]) <span class="sc">+</span> <span class="fu">component_logd</span>(x, <span class="dv">1</span>)</span>
+<span id="cb1-54"><a href="#cb1-54" tabindex="-1"></a>      b <span class="ot">&lt;-</span> <span class="fu">log</span>(w[<span class="dv">2</span>]) <span class="sc">+</span> <span class="fu">component_logd</span>(x, <span class="dv">2</span>)</span>
+<span id="cb1-55"><a href="#cb1-55" tabindex="-1"></a>      m <span class="ot">&lt;-</span> <span class="fu">max</span>(a, b)</span>
+<span id="cb1-56"><a href="#cb1-56" tabindex="-1"></a>      m <span class="sc">+</span> <span class="fu">log</span>(<span class="fu">exp</span>(a <span class="sc">-</span> m) <span class="sc">+</span> <span class="fu">exp</span>(b <span class="sc">-</span> m))</span>
+<span id="cb1-57"><a href="#cb1-57" tabindex="-1"></a>    },</span>
+<span id="cb1-58"><a href="#cb1-58" tabindex="-1"></a>    <span class="at">mean =</span> mix_mean, <span class="at">var =</span> <span class="fu">diag</span>(mix_cov), <span class="at">cov =</span> mix_cov,</span>
+<span id="cb1-59"><a href="#cb1-59" tabindex="-1"></a>    <span class="co"># Posterior probability of the minor (peaked) mode for each draw</span></span>
+<span id="cb1-60"><a href="#cb1-60" tabindex="-1"></a>    <span class="at">mode2 =</span> <span class="cf">function</span>(draws) {</span>
+<span id="cb1-61"><a href="#cb1-61" tabindex="-1"></a>      a <span class="ot">&lt;-</span> <span class="fu">log</span>(w[<span class="dv">1</span>]) <span class="sc">+</span> mvtnorm<span class="sc">::</span><span class="fu">dmvnorm</span>(draws, mu[[<span class="dv">1</span>]], covs[[<span class="dv">1</span>]], <span class="at">log =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-62"><a href="#cb1-62" tabindex="-1"></a>      b <span class="ot">&lt;-</span> <span class="fu">log</span>(w[<span class="dv">2</span>]) <span class="sc">+</span> mvtnorm<span class="sc">::</span><span class="fu">dmvnorm</span>(draws, mu[[<span class="dv">2</span>]], covs[[<span class="dv">2</span>]], <span class="at">log =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-63"><a href="#cb1-63" tabindex="-1"></a>      <span class="fu">mean</span>(b <span class="sc">&gt;</span> a)</span>
+<span id="cb1-64"><a href="#cb1-64" tabindex="-1"></a>    },</span>
+<span id="cb1-65"><a href="#cb1-65" tabindex="-1"></a>    <span class="at">init =</span> <span class="cf">function</span>() {</span>
+<span id="cb1-66"><a href="#cb1-66" tabindex="-1"></a>      k <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">2</span>, <span class="dv">1</span>)</span>
+<span id="cb1-67"><a href="#cb1-67" tabindex="-1"></a>      <span class="fu">drop</span>(mvtnorm<span class="sc">::</span><span class="fu">rmvnorm</span>(<span class="dv">1</span>, mu[[k]], <span class="dv">4</span> <span class="sc">*</span> covs[[k]]))</span>
+<span id="cb1-68"><a href="#cb1-68" tabindex="-1"></a>    }</span>
+<span id="cb1-69"><a href="#cb1-69" tabindex="-1"></a>  )</span>
+<span id="cb1-70"><a href="#cb1-70" tabindex="-1"></a></span>
+<span id="cb1-71"><a href="#cb1-71" tabindex="-1"></a>  <span class="co"># Neal&#39;s funnel, v ~ N(0, 9), x_i | v ~ N(0, exp(v))</span></span>
+<span id="cb1-72"><a href="#cb1-72" tabindex="-1"></a>  targets<span class="sc">$</span>funnel <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb1-73"><a href="#cb1-73" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">&quot;Neal&#39;s funnel&quot;</span>, <span class="at">d =</span> <span class="dv">5</span>,</span>
+<span id="cb1-74"><a href="#cb1-74" tabindex="-1"></a>    <span class="at">log_post =</span> <span class="cf">function</span>(z) {</span>
+<span id="cb1-75"><a href="#cb1-75" tabindex="-1"></a>      v <span class="ot">&lt;-</span> z[<span class="dv">1</span>]</span>
+<span id="cb1-76"><a href="#cb1-76" tabindex="-1"></a>      <span class="fu">dnorm</span>(v, <span class="dv">0</span>, <span class="dv">3</span>, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">+</span> <span class="fu">sum</span>(<span class="fu">dnorm</span>(z[<span class="sc">-</span><span class="dv">1</span>], <span class="dv">0</span>, <span class="fu">exp</span>(v <span class="sc">/</span> <span class="dv">2</span>), <span class="at">log =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb1-77"><a href="#cb1-77" tabindex="-1"></a>    },</span>
+<span id="cb1-78"><a href="#cb1-78" tabindex="-1"></a>    <span class="at">mean =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">5</span>), <span class="at">var =</span> <span class="fu">c</span>(<span class="dv">9</span>, <span class="fu">rep</span>(<span class="fu">exp</span>(<span class="fl">4.5</span>), <span class="dv">4</span>)),</span>
+<span id="cb1-79"><a href="#cb1-79" tabindex="-1"></a>    <span class="at">cov =</span> <span class="fu">diag</span>(<span class="fu">c</span>(<span class="dv">9</span>, <span class="fu">rep</span>(<span class="fu">exp</span>(<span class="fl">4.5</span>), <span class="dv">4</span>))),</span>
+<span id="cb1-80"><a href="#cb1-80" tabindex="-1"></a>    <span class="at">init =</span> <span class="cf">function</span>() {</span>
+<span id="cb1-81"><a href="#cb1-81" tabindex="-1"></a>      v <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">3</span>)</span>
+<span id="cb1-82"><a href="#cb1-82" tabindex="-1"></a>      <span class="fu">c</span>(v, <span class="fu">rnorm</span>(<span class="dv">4</span>, <span class="dv">0</span>, <span class="dv">2</span> <span class="sc">*</span> <span class="fu">exp</span>(v <span class="sc">/</span> <span class="dv">2</span>)))</span>
+<span id="cb1-83"><a href="#cb1-83" tabindex="-1"></a>    }</span>
+<span id="cb1-84"><a href="#cb1-84" tabindex="-1"></a>  )</span>
+<span id="cb1-85"><a href="#cb1-85" tabindex="-1"></a></span>
+<span id="cb1-86"><a href="#cb1-86" tabindex="-1"></a>  <span class="co"># Bayesian logistic regression, MASS::Pima.tr</span></span>
+<span id="cb1-87"><a href="#cb1-87" tabindex="-1"></a>  pima <span class="ot">&lt;-</span> MASS<span class="sc">::</span>Pima.tr</span>
+<span id="cb1-88"><a href="#cb1-88" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, <span class="fu">scale</span>(<span class="fu">as.matrix</span>(pima[, <span class="dv">1</span><span class="sc">:</span><span class="dv">7</span>])))</span>
+<span id="cb1-89"><a href="#cb1-89" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(pima<span class="sc">$</span>type <span class="sc">==</span> <span class="st">&quot;Yes&quot;</span>)</span>
+<span id="cb1-90"><a href="#cb1-90" tabindex="-1"></a>  log_post_logit <span class="ot">&lt;-</span> <span class="cf">function</span>(beta) {</span>
+<span id="cb1-91"><a href="#cb1-91" tabindex="-1"></a>    eta <span class="ot">&lt;-</span> <span class="fu">drop</span>(X <span class="sc">%*%</span> beta)</span>
+<span id="cb1-92"><a href="#cb1-92" tabindex="-1"></a>    <span class="fu">sum</span>(y <span class="sc">*</span> eta <span class="sc">-</span> <span class="fu">pmax</span>(eta, <span class="dv">0</span>) <span class="sc">-</span> <span class="fu">log1p</span>(<span class="fu">exp</span>(<span class="sc">-</span><span class="fu">abs</span>(eta)))) <span class="sc">+</span></span>
+<span id="cb1-93"><a href="#cb1-93" tabindex="-1"></a>      <span class="fu">sum</span>(<span class="fu">dnorm</span>(beta, <span class="dv">0</span>, <span class="dv">5</span>, <span class="at">log =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb1-94"><a href="#cb1-94" tabindex="-1"></a>  }</span>
+<span id="cb1-95"><a href="#cb1-95" tabindex="-1"></a>  fit <span class="ot">&lt;-</span> <span class="fu">optim</span>(<span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">8</span>), <span class="cf">function</span>(b) <span class="sc">-</span><span class="fu">log_post_logit</span>(b), <span class="at">method =</span> <span class="st">&quot;BFGS&quot;</span>,</span>
+<span id="cb1-96"><a href="#cb1-96" tabindex="-1"></a>               <span class="at">hessian =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-97"><a href="#cb1-97" tabindex="-1"></a>  laplace_cov <span class="ot">&lt;-</span> <span class="fu">solve</span>(fit<span class="sc">$</span>hessian)</span>
+<span id="cb1-98"><a href="#cb1-98" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb1-99"><a href="#cb1-99" tabindex="-1"></a>  proposals <span class="ot">&lt;-</span> mvtnorm<span class="sc">::</span><span class="fu">rmvt</span>(<span class="fl">2e5</span>, <span class="at">sigma =</span> <span class="fl">1.2</span> <span class="sc">*</span> laplace_cov, <span class="at">df =</span> <span class="dv">5</span>,</span>
+<span id="cb1-100"><a href="#cb1-100" tabindex="-1"></a>                             <span class="at">delta =</span> fit<span class="sc">$</span>par, <span class="at">type =</span> <span class="st">&quot;shifted&quot;</span>)</span>
+<span id="cb1-101"><a href="#cb1-101" tabindex="-1"></a>  log_w <span class="ot">&lt;-</span> <span class="fu">apply</span>(proposals, <span class="dv">1</span>, log_post_logit) <span class="sc">-</span></span>
+<span id="cb1-102"><a href="#cb1-102" tabindex="-1"></a>    mvtnorm<span class="sc">::</span><span class="fu">dmvt</span>(proposals, <span class="at">delta =</span> fit<span class="sc">$</span>par, <span class="at">sigma =</span> <span class="fl">1.2</span> <span class="sc">*</span> laplace_cov,</span>
+<span id="cb1-103"><a href="#cb1-103" tabindex="-1"></a>                  <span class="at">df =</span> <span class="dv">5</span>, <span class="at">log =</span> <span class="cn">TRUE</span>, <span class="at">type =</span> <span class="st">&quot;shifted&quot;</span>)</span>
+<span id="cb1-104"><a href="#cb1-104" tabindex="-1"></a>  weights <span class="ot">&lt;-</span> <span class="fu">exp</span>(log_w <span class="sc">-</span> <span class="fu">max</span>(log_w))</span>
+<span id="cb1-105"><a href="#cb1-105" tabindex="-1"></a>  weights <span class="ot">&lt;-</span> weights <span class="sc">/</span> <span class="fu">sum</span>(weights)</span>
+<span id="cb1-106"><a href="#cb1-106" tabindex="-1"></a>  is_mean <span class="ot">&lt;-</span> <span class="fu">colSums</span>(weights <span class="sc">*</span> proposals)</span>
+<span id="cb1-107"><a href="#cb1-107" tabindex="-1"></a>  is_cov <span class="ot">&lt;-</span> <span class="fu">crossprod</span>(<span class="fu">sqrt</span>(weights) <span class="sc">*</span> <span class="fu">sweep</span>(proposals, <span class="dv">2</span>, is_mean))</span>
+<span id="cb1-108"><a href="#cb1-108" tabindex="-1"></a>  targets<span class="sc">$</span>logistic <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb1-109"><a href="#cb1-109" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">&quot;Logistic regression&quot;</span>, <span class="at">d =</span> <span class="dv">8</span>,</span>
+<span id="cb1-110"><a href="#cb1-110" tabindex="-1"></a>    <span class="at">log_post =</span> log_post_logit,</span>
+<span id="cb1-111"><a href="#cb1-111" tabindex="-1"></a>    <span class="at">mean =</span> is_mean, <span class="at">var =</span> <span class="fu">diag</span>(is_cov), <span class="at">cov =</span> is_cov,</span>
+<span id="cb1-112"><a href="#cb1-112" tabindex="-1"></a>    <span class="at">is_ess_fraction =</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">sum</span>(weights<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> <span class="fu">length</span>(weights),</span>
+<span id="cb1-113"><a href="#cb1-113" tabindex="-1"></a>    <span class="at">init =</span> <span class="cf">function</span>() fit<span class="sc">$</span>par <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">8</span>, <span class="dv">0</span>, <span class="dv">3</span> <span class="sc">*</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(laplace_cov)))</span>
+<span id="cb1-114"><a href="#cb1-114" tabindex="-1"></a>  )</span>
+<span id="cb1-115"><a href="#cb1-115" tabindex="-1"></a></span>
+<span id="cb1-116"><a href="#cb1-116" tabindex="-1"></a>  targets</span>
+<span id="cb1-117"><a href="#cb1-117" tabindex="-1"></a>}</span></code></pre></div>
+<p>The samplers:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Every sampler returns `draws`, an iterations x chains x parameters array,</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co"># and `n_eval`, the number of log-density evaluations used.</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>run_twalk <span class="ot">&lt;-</span> <span class="cf">function</span>(log_post, starts, n_eval) {</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  fit <span class="ot">&lt;-</span> <span class="fu">twalk</span>(log_post, <span class="at">n_iter =</span> n_eval, <span class="at">x0 =</span> starts[<span class="dv">1</span>, ], <span class="at">xp0 =</span> starts[<span class="dv">2</span>, ],</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>               <span class="at">show_progress =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">draws =</span> <span class="fu">array</span>(fit<span class="sc">$</span>samples, <span class="fu">c</span>(<span class="fu">nrow</span>(fit<span class="sc">$</span>samples), <span class="dv">1</span>, <span class="fu">ncol</span>(fit<span class="sc">$</span>samples))),</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>       <span class="at">n_eval =</span> fit<span class="sc">$</span>n_evaluations <span class="sc">+</span> <span class="dv">2</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>}</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>rwm <span class="ot">&lt;-</span> <span class="cf">function</span>(log_post, x0, n_eval, prop_cov) {</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  d <span class="ot">&lt;-</span> <span class="fu">length</span>(x0)</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>  R <span class="ot">&lt;-</span> <span class="fu">chol</span>(prop_cov)</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>  n <span class="ot">&lt;-</span> n_eval <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>  draws <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA_real_</span>, n, d)</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>  x <span class="ot">&lt;-</span> x0</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>  lp <span class="ot">&lt;-</span> <span class="fu">log_post</span>(x)</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(n)) {</span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a>    y <span class="ot">&lt;-</span> x <span class="sc">+</span> <span class="fu">drop</span>(<span class="fu">rnorm</span>(d) <span class="sc">%*%</span> R)</span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a>    lp_y <span class="ot">&lt;-</span> <span class="fu">log_post</span>(y)</span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">log</span>(<span class="fu">runif</span>(<span class="dv">1</span>)) <span class="sc">&lt;</span> lp_y <span class="sc">-</span> lp) {</span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a>      x <span class="ot">&lt;-</span> y</span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a>      lp <span class="ot">&lt;-</span> lp_y</span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a>    }</span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a>    draws[i, ] <span class="ot">&lt;-</span> x</span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a>  }</span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">draws =</span> <span class="fu">array</span>(draws, <span class="fu">c</span>(n, <span class="dv">1</span>, d)), <span class="at">n_eval =</span> n_eval)</span>
+<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a>}</span>
+<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a></span>
+<span id="cb2-30"><a href="#cb2-30" tabindex="-1"></a>adaptive_metropolis <span class="ot">&lt;-</span> <span class="cf">function</span>(log_post, x0, n_eval, <span class="at">t0 =</span> <span class="dv">1000</span>, <span class="at">eps =</span> <span class="fl">1e-10</span>) {</span>
+<span id="cb2-31"><a href="#cb2-31" tabindex="-1"></a>  d <span class="ot">&lt;-</span> <span class="fu">length</span>(x0)</span>
+<span id="cb2-32"><a href="#cb2-32" tabindex="-1"></a>  scale <span class="ot">&lt;-</span> <span class="fl">2.38</span><span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> d</span>
+<span id="cb2-33"><a href="#cb2-33" tabindex="-1"></a>  R <span class="ot">&lt;-</span> <span class="fu">chol</span>(scale <span class="sc">*</span> <span class="fu">diag</span>(d))</span>
+<span id="cb2-34"><a href="#cb2-34" tabindex="-1"></a>  n <span class="ot">&lt;-</span> n_eval <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb2-35"><a href="#cb2-35" tabindex="-1"></a>  draws <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA_real_</span>, n, d)</span>
+<span id="cb2-36"><a href="#cb2-36" tabindex="-1"></a>  x <span class="ot">&lt;-</span> x0</span>
+<span id="cb2-37"><a href="#cb2-37" tabindex="-1"></a>  lp <span class="ot">&lt;-</span> <span class="fu">log_post</span>(x)</span>
+<span id="cb2-38"><a href="#cb2-38" tabindex="-1"></a>  running_mean <span class="ot">&lt;-</span> x</span>
+<span id="cb2-39"><a href="#cb2-39" tabindex="-1"></a>  running_cov <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, d, d)</span>
+<span id="cb2-40"><a href="#cb2-40" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(n)) {</span>
+<span id="cb2-41"><a href="#cb2-41" tabindex="-1"></a>    y <span class="ot">&lt;-</span> x <span class="sc">+</span> <span class="fu">drop</span>(<span class="fu">rnorm</span>(d) <span class="sc">%*%</span> R)</span>
+<span id="cb2-42"><a href="#cb2-42" tabindex="-1"></a>    lp_y <span class="ot">&lt;-</span> <span class="fu">log_post</span>(y)</span>
+<span id="cb2-43"><a href="#cb2-43" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">log</span>(<span class="fu">runif</span>(<span class="dv">1</span>)) <span class="sc">&lt;</span> lp_y <span class="sc">-</span> lp) {</span>
+<span id="cb2-44"><a href="#cb2-44" tabindex="-1"></a>      x <span class="ot">&lt;-</span> y</span>
+<span id="cb2-45"><a href="#cb2-45" tabindex="-1"></a>      lp <span class="ot">&lt;-</span> lp_y</span>
+<span id="cb2-46"><a href="#cb2-46" tabindex="-1"></a>    }</span>
+<span id="cb2-47"><a href="#cb2-47" tabindex="-1"></a>    draws[i, ] <span class="ot">&lt;-</span> x</span>
+<span id="cb2-48"><a href="#cb2-48" tabindex="-1"></a>    <span class="co"># Recursive (Welford) update of the empirical mean and covariance</span></span>
+<span id="cb2-49"><a href="#cb2-49" tabindex="-1"></a>    delta <span class="ot">&lt;-</span> x <span class="sc">-</span> running_mean</span>
+<span id="cb2-50"><a href="#cb2-50" tabindex="-1"></a>    running_mean <span class="ot">&lt;-</span> running_mean <span class="sc">+</span> delta <span class="sc">/</span> (i <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb2-51"><a href="#cb2-51" tabindex="-1"></a>    running_cov <span class="ot">&lt;-</span> running_cov <span class="sc">+</span> (<span class="fu">tcrossprod</span>(delta, x <span class="sc">-</span> running_mean) <span class="sc">-</span> running_cov) <span class="sc">/</span> (i <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb2-52"><a href="#cb2-52" tabindex="-1"></a>    <span class="cf">if</span> (i <span class="sc">&gt;=</span> t0) {</span>
+<span id="cb2-53"><a href="#cb2-53" tabindex="-1"></a>      new_R <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>(<span class="fu">chol</span>(scale <span class="sc">*</span> (running_cov <span class="sc">+</span> eps <span class="sc">*</span> <span class="fu">diag</span>(d))),</span>
+<span id="cb2-54"><a href="#cb2-54" tabindex="-1"></a>                        <span class="at">error =</span> <span class="cf">function</span>(e) <span class="cn">NULL</span>)</span>
+<span id="cb2-55"><a href="#cb2-55" tabindex="-1"></a>      <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(new_R)) R <span class="ot">&lt;-</span> new_R</span>
+<span id="cb2-56"><a href="#cb2-56" tabindex="-1"></a>    }</span>
+<span id="cb2-57"><a href="#cb2-57" tabindex="-1"></a>  }</span>
+<span id="cb2-58"><a href="#cb2-58" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">draws =</span> <span class="fu">array</span>(draws, <span class="fu">c</span>(n, <span class="dv">1</span>, d)), <span class="at">n_eval =</span> n_eval)</span>
+<span id="cb2-59"><a href="#cb2-59" tabindex="-1"></a>}</span>
+<span id="cb2-60"><a href="#cb2-60" tabindex="-1"></a></span>
+<span id="cb2-61"><a href="#cb2-61" tabindex="-1"></a>stretch_ensemble <span class="ot">&lt;-</span> <span class="cf">function</span>(log_post, starts, n_eval, <span class="at">a =</span> <span class="dv">2</span>) {</span>
+<span id="cb2-62"><a href="#cb2-62" tabindex="-1"></a>  L <span class="ot">&lt;-</span> <span class="fu">nrow</span>(starts)</span>
+<span id="cb2-63"><a href="#cb2-63" tabindex="-1"></a>  d <span class="ot">&lt;-</span> <span class="fu">ncol</span>(starts)</span>
+<span id="cb2-64"><a href="#cb2-64" tabindex="-1"></a>  n_sweeps <span class="ot">&lt;-</span> (n_eval <span class="sc">-</span> L) <span class="sc">%/%</span> L</span>
+<span id="cb2-65"><a href="#cb2-65" tabindex="-1"></a>  X <span class="ot">&lt;-</span> starts</span>
+<span id="cb2-66"><a href="#cb2-66" tabindex="-1"></a>  lp <span class="ot">&lt;-</span> <span class="fu">apply</span>(X, <span class="dv">1</span>, log_post)</span>
+<span id="cb2-67"><a href="#cb2-67" tabindex="-1"></a>  draws <span class="ot">&lt;-</span> <span class="fu">array</span>(<span class="cn">NA_real_</span>, <span class="fu">c</span>(n_sweeps, L, d))</span>
+<span id="cb2-68"><a href="#cb2-68" tabindex="-1"></a>  <span class="cf">for</span> (s <span class="cf">in</span> <span class="fu">seq_len</span>(n_sweeps)) {</span>
+<span id="cb2-69"><a href="#cb2-69" tabindex="-1"></a>    <span class="cf">for</span> (k <span class="cf">in</span> <span class="fu">seq_len</span>(L)) {</span>
+<span id="cb2-70"><a href="#cb2-70" tabindex="-1"></a>      j <span class="ot">&lt;-</span> <span class="fu">sample.int</span>(L <span class="sc">-</span> <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb2-71"><a href="#cb2-71" tabindex="-1"></a>      <span class="cf">if</span> (j <span class="sc">&gt;=</span> k) j <span class="ot">&lt;-</span> j <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb2-72"><a href="#cb2-72" tabindex="-1"></a>      z <span class="ot">&lt;-</span> ((a <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">runif</span>(<span class="dv">1</span>) <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> a</span>
+<span id="cb2-73"><a href="#cb2-73" tabindex="-1"></a>      y <span class="ot">&lt;-</span> X[j, ] <span class="sc">+</span> z <span class="sc">*</span> (X[k, ] <span class="sc">-</span> X[j, ])</span>
+<span id="cb2-74"><a href="#cb2-74" tabindex="-1"></a>      lp_y <span class="ot">&lt;-</span> <span class="fu">log_post</span>(y)</span>
+<span id="cb2-75"><a href="#cb2-75" tabindex="-1"></a>      <span class="cf">if</span> (<span class="fu">log</span>(<span class="fu">runif</span>(<span class="dv">1</span>)) <span class="sc">&lt;</span> (d <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">log</span>(z) <span class="sc">+</span> lp_y <span class="sc">-</span> lp[k]) {</span>
+<span id="cb2-76"><a href="#cb2-76" tabindex="-1"></a>        X[k, ] <span class="ot">&lt;-</span> y</span>
+<span id="cb2-77"><a href="#cb2-77" tabindex="-1"></a>        lp[k] <span class="ot">&lt;-</span> lp_y</span>
+<span id="cb2-78"><a href="#cb2-78" tabindex="-1"></a>      }</span>
+<span id="cb2-79"><a href="#cb2-79" tabindex="-1"></a>    }</span>
+<span id="cb2-80"><a href="#cb2-80" tabindex="-1"></a>    draws[s, , ] <span class="ot">&lt;-</span> X</span>
+<span id="cb2-81"><a href="#cb2-81" tabindex="-1"></a>  }</span>
+<span id="cb2-82"><a href="#cb2-82" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">draws =</span> draws, <span class="at">n_eval =</span> L <span class="sc">+</span> n_sweeps <span class="sc">*</span> L)</span>
+<span id="cb2-83"><a href="#cb2-83" tabindex="-1"></a>}</span>
+<span id="cb2-84"><a href="#cb2-84" tabindex="-1"></a></span>
+<span id="cb2-85"><a href="#cb2-85" tabindex="-1"></a>slice_sampler <span class="ot">&lt;-</span> <span class="cf">function</span>(log_post, x0, n_eval, <span class="at">w =</span> <span class="dv">1</span>, <span class="at">m =</span> <span class="dv">100</span>) {</span>
+<span id="cb2-86"><a href="#cb2-86" tabindex="-1"></a>  d <span class="ot">&lt;-</span> <span class="fu">length</span>(x0)</span>
+<span id="cb2-87"><a href="#cb2-87" tabindex="-1"></a>  evals <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb2-88"><a href="#cb2-88" tabindex="-1"></a>  f <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb2-89"><a href="#cb2-89" tabindex="-1"></a>    evals <span class="ot">&lt;&lt;-</span> evals <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb2-90"><a href="#cb2-90" tabindex="-1"></a>    <span class="fu">log_post</span>(x)</span>
+<span id="cb2-91"><a href="#cb2-91" tabindex="-1"></a>  }</span>
+<span id="cb2-92"><a href="#cb2-92" tabindex="-1"></a>  x <span class="ot">&lt;-</span> x0</span>
+<span id="cb2-93"><a href="#cb2-93" tabindex="-1"></a>  lp <span class="ot">&lt;-</span> <span class="fu">f</span>(x)</span>
+<span id="cb2-94"><a href="#cb2-94" tabindex="-1"></a>  draws <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA_real_</span>, n_eval, d)</span>
+<span id="cb2-95"><a href="#cb2-95" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb2-96"><a href="#cb2-96" tabindex="-1"></a>  <span class="cf">while</span> (evals <span class="sc">&lt;</span> n_eval) {</span>
+<span id="cb2-97"><a href="#cb2-97" tabindex="-1"></a>    <span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_len</span>(d)) {</span>
+<span id="cb2-98"><a href="#cb2-98" tabindex="-1"></a>      log_level <span class="ot">&lt;-</span> lp <span class="sc">-</span> <span class="fu">rexp</span>(<span class="dv">1</span>)</span>
+<span id="cb2-99"><a href="#cb2-99" tabindex="-1"></a>      at <span class="ot">&lt;-</span> <span class="cf">function</span>(value) {</span>
+<span id="cb2-100"><a href="#cb2-100" tabindex="-1"></a>        z <span class="ot">&lt;-</span> x</span>
+<span id="cb2-101"><a href="#cb2-101" tabindex="-1"></a>        z[j] <span class="ot">&lt;-</span> value</span>
+<span id="cb2-102"><a href="#cb2-102" tabindex="-1"></a>        <span class="fu">f</span>(z)</span>
+<span id="cb2-103"><a href="#cb2-103" tabindex="-1"></a>      }</span>
+<span id="cb2-104"><a href="#cb2-104" tabindex="-1"></a>      left <span class="ot">&lt;-</span> x[j] <span class="sc">-</span> w <span class="sc">*</span> <span class="fu">runif</span>(<span class="dv">1</span>)</span>
+<span id="cb2-105"><a href="#cb2-105" tabindex="-1"></a>      right <span class="ot">&lt;-</span> left <span class="sc">+</span> w</span>
+<span id="cb2-106"><a href="#cb2-106" tabindex="-1"></a>      steps_left <span class="ot">&lt;-</span> <span class="fu">floor</span>(m <span class="sc">*</span> <span class="fu">runif</span>(<span class="dv">1</span>))</span>
+<span id="cb2-107"><a href="#cb2-107" tabindex="-1"></a>      steps_right <span class="ot">&lt;-</span> m <span class="sc">-</span> <span class="dv">1</span> <span class="sc">-</span> steps_left</span>
+<span id="cb2-108"><a href="#cb2-108" tabindex="-1"></a>      <span class="cf">while</span> (steps_left <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;&amp;</span> <span class="fu">at</span>(left) <span class="sc">&gt;</span> log_level) {</span>
+<span id="cb2-109"><a href="#cb2-109" tabindex="-1"></a>        left <span class="ot">&lt;-</span> left <span class="sc">-</span> w</span>
+<span id="cb2-110"><a href="#cb2-110" tabindex="-1"></a>        steps_left <span class="ot">&lt;-</span> steps_left <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb2-111"><a href="#cb2-111" tabindex="-1"></a>      }</span>
+<span id="cb2-112"><a href="#cb2-112" tabindex="-1"></a>      <span class="cf">while</span> (steps_right <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;&amp;</span> <span class="fu">at</span>(right) <span class="sc">&gt;</span> log_level) {</span>
+<span id="cb2-113"><a href="#cb2-113" tabindex="-1"></a>        right <span class="ot">&lt;-</span> right <span class="sc">+</span> w</span>
+<span id="cb2-114"><a href="#cb2-114" tabindex="-1"></a>        steps_right <span class="ot">&lt;-</span> steps_right <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb2-115"><a href="#cb2-115" tabindex="-1"></a>      }</span>
+<span id="cb2-116"><a href="#cb2-116" tabindex="-1"></a>      <span class="cf">repeat</span> {</span>
+<span id="cb2-117"><a href="#cb2-117" tabindex="-1"></a>        candidate <span class="ot">&lt;-</span> left <span class="sc">+</span> <span class="fu">runif</span>(<span class="dv">1</span>) <span class="sc">*</span> (right <span class="sc">-</span> left)</span>
+<span id="cb2-118"><a href="#cb2-118" tabindex="-1"></a>        lp_candidate <span class="ot">&lt;-</span> <span class="fu">at</span>(candidate)</span>
+<span id="cb2-119"><a href="#cb2-119" tabindex="-1"></a>        <span class="cf">if</span> (lp_candidate <span class="sc">&gt;</span> log_level) <span class="cf">break</span></span>
+<span id="cb2-120"><a href="#cb2-120" tabindex="-1"></a>        <span class="cf">if</span> (candidate <span class="sc">&lt;</span> x[j]) left <span class="ot">&lt;-</span> candidate <span class="cf">else</span> right <span class="ot">&lt;-</span> candidate</span>
+<span id="cb2-121"><a href="#cb2-121" tabindex="-1"></a>      }</span>
+<span id="cb2-122"><a href="#cb2-122" tabindex="-1"></a>      x[j] <span class="ot">&lt;-</span> candidate</span>
+<span id="cb2-123"><a href="#cb2-123" tabindex="-1"></a>      lp <span class="ot">&lt;-</span> lp_candidate</span>
+<span id="cb2-124"><a href="#cb2-124" tabindex="-1"></a>    }</span>
+<span id="cb2-125"><a href="#cb2-125" tabindex="-1"></a>    n <span class="ot">&lt;-</span> n <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb2-126"><a href="#cb2-126" tabindex="-1"></a>    draws[n, ] <span class="ot">&lt;-</span> x</span>
+<span id="cb2-127"><a href="#cb2-127" tabindex="-1"></a>  }</span>
+<span id="cb2-128"><a href="#cb2-128" tabindex="-1"></a>  draws <span class="ot">&lt;-</span> draws[<span class="fu">seq_len</span>(n), , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb2-129"><a href="#cb2-129" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">draws =</span> <span class="fu">array</span>(draws, <span class="fu">c</span>(n, <span class="dv">1</span>, d)), <span class="at">n_eval =</span> evals)</span>
+<span id="cb2-130"><a href="#cb2-130" tabindex="-1"></a>}</span></code></pre></div>
+<p>The evaluation:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>sampler_labels <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;t-walk&quot;</span>, <span class="st">&quot;RWM naive&quot;</span>, <span class="st">&quot;RWM oracle&quot;</span>, <span class="st">&quot;AM&quot;</span>, <span class="st">&quot;Ensemble&quot;</span>, <span class="st">&quot;Slice&quot;</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>run_sampler <span class="ot">&lt;-</span> <span class="cf">function</span>(sampler, target, starts, n_eval) {</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  d <span class="ot">&lt;-</span> target<span class="sc">$</span>d</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="cf">switch</span>(sampler,</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>    <span class="st">&quot;t-walk&quot;</span> <span class="ot">=</span> <span class="fu">run_twalk</span>(target<span class="sc">$</span>log_post, starts[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, ], n_eval),</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    <span class="st">&quot;RWM naive&quot;</span> <span class="ot">=</span> <span class="fu">rwm</span>(target<span class="sc">$</span>log_post, starts[<span class="dv">1</span>, ], n_eval, <span class="fl">2.38</span><span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> d <span class="sc">*</span> <span class="fu">diag</span>(d)),</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    <span class="st">&quot;RWM oracle&quot;</span> <span class="ot">=</span> <span class="fu">rwm</span>(target<span class="sc">$</span>log_post, starts[<span class="dv">1</span>, ], n_eval, <span class="fl">2.38</span><span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> d <span class="sc">*</span> target<span class="sc">$</span>cov),</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>    <span class="st">&quot;AM&quot;</span> <span class="ot">=</span> <span class="fu">adaptive_metropolis</span>(target<span class="sc">$</span>log_post, starts[<span class="dv">1</span>, ], n_eval),</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>    <span class="st">&quot;Ensemble&quot;</span> <span class="ot">=</span> <span class="fu">stretch_ensemble</span>(target<span class="sc">$</span>log_post, starts, n_eval),</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>    <span class="st">&quot;Slice&quot;</span> <span class="ot">=</span> <span class="fu">slice_sampler</span>(target<span class="sc">$</span>log_post, starts[<span class="dv">1</span>, ], n_eval)</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>  )</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>}</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>assess <span class="ot">&lt;-</span> <span class="cf">function</span>(run, target, <span class="at">burnin_frac =</span> <span class="fl">0.2</span>) {</span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>  draws <span class="ot">&lt;-</span> run<span class="sc">$</span>draws</span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">dim</span>(draws)[<span class="dv">1</span>]</span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>  keep <span class="ot">&lt;-</span> <span class="fu">seq.int</span>(<span class="fu">floor</span>(burnin_frac <span class="sc">*</span> n) <span class="sc">+</span> <span class="dv">1</span>, n)</span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>  draws <span class="ot">&lt;-</span> draws[keep, , , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a>  <span class="co"># A chain that never moves has no defined ESS; count it as zero.</span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>  ess <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="fu">seq_len</span>(target<span class="sc">$</span>d), <span class="cf">function</span>(j) {</span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>    value <span class="ot">&lt;-</span> <span class="fu">suppressWarnings</span>(</span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>      posterior<span class="sc">::</span><span class="fu">ess_bulk</span>(<span class="fu">matrix</span>(draws[, , j], <span class="at">nrow =</span> <span class="fu">length</span>(keep)))</span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>    )</span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">is.na</span>(value)) <span class="dv">0</span> <span class="cf">else</span> value</span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a>  }, <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a>  pooled <span class="ot">&lt;-</span> <span class="fu">matrix</span>(draws, <span class="at">ncol =</span> target<span class="sc">$</span>d)</span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a>  sds <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(target<span class="sc">$</span>var)</span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a>    <span class="at">min_ess =</span> <span class="fu">min</span>(ess),</span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a>    <span class="at">ess_per_1000 =</span> <span class="dv">1000</span> <span class="sc">*</span> <span class="fu">min</span>(ess) <span class="sc">/</span> run<span class="sc">$</span>n_eval,</span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a>    <span class="at">mean_error =</span> <span class="fu">sqrt</span>(<span class="fu">mean</span>(((<span class="fu">colMeans</span>(pooled) <span class="sc">-</span> target<span class="sc">$</span>mean) <span class="sc">/</span> sds)<span class="sc">^</span><span class="dv">2</span>)),</span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a>    <span class="at">var_error =</span> <span class="fu">sqrt</span>(<span class="fu">mean</span>(<span class="fu">log</span>(<span class="fu">apply</span>(pooled, <span class="dv">2</span>, var) <span class="sc">/</span> target<span class="sc">$</span>var)<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a>  )</span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(target<span class="sc">$</span>mode2)) out[<span class="st">&quot;mode2&quot;</span>] <span class="ot">&lt;-</span> target<span class="sc">$</span><span class="fu">mode2</span>(pooled)</span>
+<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a>  out</span>
+<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a>}</span>
+<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a></span>
+<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a>benchmark <span class="ot">&lt;-</span> <span class="cf">function</span>(targets, n_eval, n_rep, <span class="at">samplers =</span> sampler_labels) {</span>
+<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a>  results <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a>  examples <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="fu">seq_along</span>(targets)) {</span>
+<span id="cb3-43"><a href="#cb3-43" tabindex="-1"></a>    target <span class="ot">&lt;-</span> targets[[t]]</span>
+<span id="cb3-44"><a href="#cb3-44" tabindex="-1"></a>    n_walkers <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="dv">2</span> <span class="sc">*</span> target<span class="sc">$</span>d, <span class="dv">8</span>)</span>
+<span id="cb3-45"><a href="#cb3-45" tabindex="-1"></a>    <span class="cf">for</span> (r <span class="cf">in</span> <span class="fu">seq_len</span>(n_rep)) {</span>
+<span id="cb3-46"><a href="#cb3-46" tabindex="-1"></a>      <span class="fu">set.seed</span>(<span class="dv">1000</span> <span class="sc">*</span> t <span class="sc">+</span> r)</span>
+<span id="cb3-47"><a href="#cb3-47" tabindex="-1"></a>      starts <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">replicate</span>(n_walkers, target<span class="sc">$</span><span class="fu">init</span>()))</span>
+<span id="cb3-48"><a href="#cb3-48" tabindex="-1"></a>      <span class="cf">if</span> (target<span class="sc">$</span>d <span class="sc">==</span> <span class="dv">1</span>) starts <span class="ot">&lt;-</span> <span class="fu">t</span>(starts)</span>
+<span id="cb3-49"><a href="#cb3-49" tabindex="-1"></a>      <span class="cf">for</span> (s <span class="cf">in</span> <span class="fu">seq_along</span>(samplers)) {</span>
+<span id="cb3-50"><a href="#cb3-50" tabindex="-1"></a>        <span class="fu">set.seed</span>(<span class="dv">100000</span> <span class="sc">*</span> t <span class="sc">+</span> <span class="dv">100</span> <span class="sc">*</span> r <span class="sc">+</span> s)</span>
+<span id="cb3-51"><a href="#cb3-51" tabindex="-1"></a>        time <span class="ot">&lt;-</span> <span class="fu">system.time</span>(run <span class="ot">&lt;-</span> <span class="fu">run_sampler</span>(samplers[s], target, starts, n_eval))</span>
+<span id="cb3-52"><a href="#cb3-52" tabindex="-1"></a>        metrics <span class="ot">&lt;-</span> <span class="fu">assess</span>(run, target)</span>
+<span id="cb3-53"><a href="#cb3-53" tabindex="-1"></a>        results[[<span class="fu">length</span>(results) <span class="sc">+</span> <span class="dv">1</span>]] <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb3-54"><a href="#cb3-54" tabindex="-1"></a>          <span class="at">target =</span> target<span class="sc">$</span>label, <span class="at">sampler =</span> samplers[s], <span class="at">replicate =</span> r,</span>
+<span id="cb3-55"><a href="#cb3-55" tabindex="-1"></a>          <span class="at">seconds =</span> time[[<span class="st">&quot;elapsed&quot;</span>]], <span class="at">n_eval =</span> run<span class="sc">$</span>n_eval,</span>
+<span id="cb3-56"><a href="#cb3-56" tabindex="-1"></a>          <span class="fu">t</span>(metrics), <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb3-57"><a href="#cb3-57" tabindex="-1"></a>        )</span>
+<span id="cb3-58"><a href="#cb3-58" tabindex="-1"></a>        <span class="cf">if</span> (r <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;&amp;</span> <span class="fu">names</span>(targets)[t] <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;rosenbrock&quot;</span>, <span class="st">&quot;funnel&quot;</span>)) {</span>
+<span id="cb3-59"><a href="#cb3-59" tabindex="-1"></a>          pooled <span class="ot">&lt;-</span> <span class="fu">matrix</span>(run<span class="sc">$</span>draws, <span class="at">ncol =</span> target<span class="sc">$</span>d)</span>
+<span id="cb3-60"><a href="#cb3-60" tabindex="-1"></a>          thin <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">round</span>(<span class="fu">seq</span>(<span class="fu">nrow</span>(pooled) <span class="sc">*</span> <span class="fl">0.2</span> <span class="sc">+</span> <span class="dv">1</span>, <span class="fu">nrow</span>(pooled), <span class="at">length.out =</span> <span class="dv">4000</span>)))</span>
+<span id="cb3-61"><a href="#cb3-61" tabindex="-1"></a>          examples[[<span class="fu">names</span>(targets)[t]]][[samplers[s]]] <span class="ot">&lt;-</span> pooled[thin, ]</span>
+<span id="cb3-62"><a href="#cb3-62" tabindex="-1"></a>        }</span>
+<span id="cb3-63"><a href="#cb3-63" tabindex="-1"></a>      }</span>
+<span id="cb3-64"><a href="#cb3-64" tabindex="-1"></a>    }</span>
+<span id="cb3-65"><a href="#cb3-65" tabindex="-1"></a>  }</span>
+<span id="cb3-66"><a href="#cb3-66" tabindex="-1"></a>  results <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(results, <span class="cf">function</span>(x) {</span>
+<span id="cb3-67"><a href="#cb3-67" tabindex="-1"></a>    <span class="cf">if</span> (<span class="sc">!</span><span class="st">&quot;mode2&quot;</span> <span class="sc">%in%</span> <span class="fu">names</span>(x)) x<span class="sc">$</span>mode2 <span class="ot">&lt;-</span> <span class="cn">NA_real_</span></span>
+<span id="cb3-68"><a href="#cb3-68" tabindex="-1"></a>    x</span>
+<span id="cb3-69"><a href="#cb3-69" tabindex="-1"></a>  }))</span>
+<span id="cb3-70"><a href="#cb3-70" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">results =</span> results, <span class="at">examples =</span> examples)</span>
+<span id="cb3-71"><a href="#cb3-71" tabindex="-1"></a>}</span>
+<span id="cb3-72"><a href="#cb3-72" tabindex="-1"></a>cache_file <span class="ot">&lt;-</span> <span class="fu">file.path</span>(cache_dir, <span class="st">&quot;sampler_comparison_results.rds&quot;</span>)</span>
+<span id="cb3-73"><a href="#cb3-73" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">file.exists</span>(cache_file)) {</span>
+<span id="cb3-74"><a href="#cb3-74" tabindex="-1"></a>  cached <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(cache_file)</span>
+<span id="cb3-75"><a href="#cb3-75" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb3-76"><a href="#cb3-76" tabindex="-1"></a>  targets <span class="ot">&lt;-</span> <span class="fu">make_targets</span>()</span>
+<span id="cb3-77"><a href="#cb3-77" tabindex="-1"></a>  total_time <span class="ot">&lt;-</span> <span class="fu">system.time</span>({</span>
+<span id="cb3-78"><a href="#cb3-78" tabindex="-1"></a>    main <span class="ot">&lt;-</span> <span class="fu">benchmark</span>(targets, <span class="at">n_eval =</span> <span class="fl">1e5</span>, <span class="at">n_rep =</span> <span class="dv">5</span>)</span>
+<span id="cb3-79"><a href="#cb3-79" tabindex="-1"></a></span>
+<span id="cb3-80"><a href="#cb3-80" tabindex="-1"></a>    <span class="co"># Scale experiment: independent Gaussians whose standard deviations span</span></span>
+<span id="cb3-81"><a href="#cb3-81" tabindex="-1"></a>    <span class="co"># 10^k orders of magnitude.</span></span>
+<span id="cb3-82"><a href="#cb3-82" tabindex="-1"></a>    scale_runs <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb3-83"><a href="#cb3-83" tabindex="-1"></a>    <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>) {</span>
+<span id="cb3-84"><a href="#cb3-84" tabindex="-1"></a>      sds <span class="ot">&lt;-</span> <span class="dv">10</span><span class="sc">^</span><span class="fu">seq</span>(<span class="sc">-</span>k <span class="sc">/</span> <span class="dv">2</span>, k <span class="sc">/</span> <span class="dv">2</span>, <span class="at">length.out =</span> <span class="dv">10</span>)</span>
+<span id="cb3-85"><a href="#cb3-85" tabindex="-1"></a>      scale_target <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">scale =</span> <span class="fu">list</span>(</span>
+<span id="cb3-86"><a href="#cb3-86" tabindex="-1"></a>        <span class="at">label =</span> <span class="fu">sprintf</span>(<span class="st">&quot;1e%d&quot;</span>, k), <span class="at">d =</span> <span class="dv">10</span>,</span>
+<span id="cb3-87"><a href="#cb3-87" tabindex="-1"></a>        <span class="at">log_post =</span> <span class="fu">local</span>({</span>
+<span id="cb3-88"><a href="#cb3-88" tabindex="-1"></a>          s <span class="ot">&lt;-</span> sds</span>
+<span id="cb3-89"><a href="#cb3-89" tabindex="-1"></a>          <span class="cf">function</span>(x) <span class="sc">-</span><span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">sum</span>((x <span class="sc">/</span> s)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb3-90"><a href="#cb3-90" tabindex="-1"></a>        }),</span>
+<span id="cb3-91"><a href="#cb3-91" tabindex="-1"></a>        <span class="at">mean =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">10</span>), <span class="at">var =</span> sds<span class="sc">^</span><span class="dv">2</span>, <span class="at">cov =</span> <span class="fu">diag</span>(sds<span class="sc">^</span><span class="dv">2</span>),</span>
+<span id="cb3-92"><a href="#cb3-92" tabindex="-1"></a>        <span class="at">init =</span> <span class="fu">local</span>({</span>
+<span id="cb3-93"><a href="#cb3-93" tabindex="-1"></a>          s <span class="ot">&lt;-</span> sds</span>
+<span id="cb3-94"><a href="#cb3-94" tabindex="-1"></a>          <span class="cf">function</span>() <span class="fu">rnorm</span>(<span class="dv">10</span>, <span class="dv">0</span>, <span class="dv">2</span> <span class="sc">*</span> s)</span>
+<span id="cb3-95"><a href="#cb3-95" tabindex="-1"></a>        })</span>
+<span id="cb3-96"><a href="#cb3-96" tabindex="-1"></a>      ))</span>
+<span id="cb3-97"><a href="#cb3-97" tabindex="-1"></a>      scale_runs[[k <span class="sc">+</span> <span class="dv">1</span>]] <span class="ot">&lt;-</span> <span class="fu">benchmark</span>(</span>
+<span id="cb3-98"><a href="#cb3-98" tabindex="-1"></a>        scale_target, <span class="at">n_eval =</span> <span class="fl">5e4</span>, <span class="at">n_rep =</span> <span class="dv">3</span>,</span>
+<span id="cb3-99"><a href="#cb3-99" tabindex="-1"></a>        <span class="at">samplers =</span> <span class="fu">c</span>(<span class="st">&quot;t-walk&quot;</span>, <span class="st">&quot;RWM naive&quot;</span>, <span class="st">&quot;AM&quot;</span>, <span class="st">&quot;Ensemble&quot;</span>, <span class="st">&quot;Slice&quot;</span>)</span>
+<span id="cb3-100"><a href="#cb3-100" tabindex="-1"></a>      )<span class="sc">$</span>results</span>
+<span id="cb3-101"><a href="#cb3-101" tabindex="-1"></a>    }</span>
+<span id="cb3-102"><a href="#cb3-102" tabindex="-1"></a>  })</span>
+<span id="cb3-103"><a href="#cb3-103" tabindex="-1"></a>  cached <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb3-104"><a href="#cb3-104" tabindex="-1"></a>    <span class="at">results =</span> main<span class="sc">$</span>results,</span>
+<span id="cb3-105"><a href="#cb3-105" tabindex="-1"></a>    <span class="at">examples =</span> main<span class="sc">$</span>examples,</span>
+<span id="cb3-106"><a href="#cb3-106" tabindex="-1"></a>    <span class="at">scale =</span> <span class="fu">do.call</span>(rbind, scale_runs),</span>
+<span id="cb3-107"><a href="#cb3-107" tabindex="-1"></a>    <span class="at">is_ess_fraction =</span> targets<span class="sc">$</span>logistic<span class="sc">$</span>is_ess_fraction,</span>
+<span id="cb3-108"><a href="#cb3-108" tabindex="-1"></a>    <span class="at">total_time =</span> total_time[[<span class="st">&quot;elapsed&quot;</span>]],</span>
+<span id="cb3-109"><a href="#cb3-109" tabindex="-1"></a>    <span class="at">session =</span> <span class="fu">sessionInfo</span>()</span>
+<span id="cb3-110"><a href="#cb3-110" tabindex="-1"></a>  )</span>
+<span id="cb3-111"><a href="#cb3-111" tabindex="-1"></a>  <span class="fu">saveRDS</span>(cached, cache_file)</span>
+<span id="cb3-112"><a href="#cb3-112" tabindex="-1"></a>}</span>
+<span id="cb3-113"><a href="#cb3-113" tabindex="-1"></a></span>
+<span id="cb3-114"><a href="#cb3-114" tabindex="-1"></a>results <span class="ot">&lt;-</span> cached<span class="sc">$</span>results</span>
+<span id="cb3-115"><a href="#cb3-115" tabindex="-1"></a>target_order <span class="ot">&lt;-</span> <span class="fu">unique</span>(results<span class="sc">$</span>target)</span>
+<span id="cb3-116"><a href="#cb3-116" tabindex="-1"></a>results<span class="sc">$</span>target <span class="ot">&lt;-</span> <span class="fu">factor</span>(results<span class="sc">$</span>target, <span class="at">levels =</span> target_order)</span>
+<span id="cb3-117"><a href="#cb3-117" tabindex="-1"></a>results<span class="sc">$</span>sampler <span class="ot">&lt;-</span> <span class="fu">factor</span>(results<span class="sc">$</span>sampler, <span class="at">levels =</span> sampler_labels)</span>
+<span id="cb3-118"><a href="#cb3-118" tabindex="-1"></a></span>
+<span id="cb3-119"><a href="#cb3-119" tabindex="-1"></a>med <span class="ot">&lt;-</span> <span class="cf">function</span>(x) stats<span class="sc">::</span><span class="fu">median</span>(x)</span>
+<span id="cb3-120"><a href="#cb3-120" tabindex="-1"></a>summary_table <span class="ot">&lt;-</span> <span class="cf">function</span>(column, digits) {</span>
+<span id="cb3-121"><a href="#cb3-121" tabindex="-1"></a>  tab <span class="ot">&lt;-</span> <span class="fu">tapply</span>(results[[column]], <span class="fu">list</span>(results<span class="sc">$</span>target, results<span class="sc">$</span>sampler), med)</span>
+<span id="cb3-122"><a href="#cb3-122" tabindex="-1"></a>  <span class="fu">round</span>(tab, digits)</span>
+<span id="cb3-123"><a href="#cb3-123" tabindex="-1"></a>}</span>
+<span id="cb3-124"><a href="#cb3-124" tabindex="-1"></a>correlation_file <span class="ot">&lt;-</span> <span class="fu">file.path</span>(cache_dir, <span class="st">&quot;sampler_comparison_correlation.rds&quot;</span>)</span>
+<span id="cb3-125"><a href="#cb3-125" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">file.exists</span>(correlation_file)) {</span>
+<span id="cb3-126"><a href="#cb3-126" tabindex="-1"></a>  correlation <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(correlation_file)</span>
+<span id="cb3-127"><a href="#cb3-127" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb3-128"><a href="#cb3-128" tabindex="-1"></a>  correlation <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.8</span>, <span class="fl">0.9</span>, <span class="fl">0.95</span>), <span class="cf">function</span>(rho) {</span>
+<span id="cb3-129"><a href="#cb3-129" tabindex="-1"></a>    sigma <span class="ot">&lt;-</span> rho<span class="sc">^</span><span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb3-130"><a href="#cb3-130" tabindex="-1"></a>    prec <span class="ot">&lt;-</span> <span class="fu">solve</span>(sigma)</span>
+<span id="cb3-131"><a href="#cb3-131" tabindex="-1"></a>    target <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">correlation =</span> <span class="fu">list</span>(</span>
+<span id="cb3-132"><a href="#cb3-132" tabindex="-1"></a>      <span class="at">label =</span> <span class="fu">sprintf</span>(<span class="st">&quot;%.2f&quot;</span>, rho), <span class="at">d =</span> <span class="dv">10</span>,</span>
+<span id="cb3-133"><a href="#cb3-133" tabindex="-1"></a>      <span class="at">log_post =</span> <span class="cf">function</span>(x) <span class="sc">-</span><span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">drop</span>(<span class="fu">crossprod</span>(x, prec <span class="sc">%*%</span> x)),</span>
+<span id="cb3-134"><a href="#cb3-134" tabindex="-1"></a>      <span class="at">mean =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">10</span>), <span class="at">var =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">10</span>), <span class="at">cov =</span> sigma,</span>
+<span id="cb3-135"><a href="#cb3-135" tabindex="-1"></a>      <span class="at">init =</span> <span class="cf">function</span>() <span class="fu">rnorm</span>(<span class="dv">10</span>, <span class="dv">0</span>, <span class="dv">2</span>)</span>
+<span id="cb3-136"><a href="#cb3-136" tabindex="-1"></a>    ))</span>
+<span id="cb3-137"><a href="#cb3-137" tabindex="-1"></a>    <span class="fu">benchmark</span>(target, <span class="at">n_eval =</span> <span class="fl">1e5</span>, <span class="at">n_rep =</span> <span class="dv">3</span>, <span class="at">samplers =</span> <span class="fu">c</span>(<span class="st">&quot;t-walk&quot;</span>, <span class="st">&quot;AM&quot;</span>))<span class="sc">$</span>results</span>
+<span id="cb3-138"><a href="#cb3-138" tabindex="-1"></a>  }))</span>
+<span id="cb3-139"><a href="#cb3-139" tabindex="-1"></a>  <span class="fu">saveRDS</span>(correlation, correlation_file)</span>
+<span id="cb3-140"><a href="#cb3-140" tabindex="-1"></a>}</span>
+<span id="cb3-141"><a href="#cb3-141" tabindex="-1"></a>correlation_table <span class="ot">&lt;-</span> <span class="fu">tapply</span>(correlation<span class="sc">$</span>ess_per_1000,</span>
+<span id="cb3-142"><a href="#cb3-142" tabindex="-1"></a>                            <span class="fu">list</span>(<span class="at">rho =</span> correlation<span class="sc">$</span>target, correlation<span class="sc">$</span>sampler),</span>
+<span id="cb3-143"><a href="#cb3-143" tabindex="-1"></a>                            stats<span class="sc">::</span>median)</span>
+<span id="cb3-144"><a href="#cb3-144" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">round</span>(correlation_table, <span class="dv">2</span>),</span>
+<span id="cb3-145"><a href="#cb3-145" tabindex="-1"></a>             <span class="at">caption =</span> <span class="st">&quot;Median minimum bulk ESS per 1000 evaluations, 10-dimensional AR(1) Gaussians.&quot;</span>)</span></code></pre></div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
