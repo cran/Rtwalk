@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>The penalised t-walk</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">The penalised t-walk</h1>
+
+
+
+<blockquote>
+<p>This vignette is precomputed: its code is run when the package is
+developed, not when it is installed, because some experiments take a few
+minutes. The full source is in
+<code>vignettes/penalised_twalk.Rmd.orig</code>.</p>
+</blockquote>
+<p>The four moves of the t-walk adapt to the scale and correlation of
+the target, but like most MCMC samplers the t-walk can get trapped in
+one mode when the modes are separated by regions of very low density.
+Medina-Aguayo and Christen proposed a fifth move for this situation:</p>
+<blockquote>
+<p>Medina-Aguayo, F. J. and Christen, J. A. (2022). Penalised t-walk
+MCMC. <em>Journal of Statistical Planning and Inference</em>, 221,
+230–247. <a href="doi:10.1016/j.jspi.2022.04.008" class="uri">doi:10.1016/j.jspi.2022.04.008</a></p>
+</blockquote>
+<p>Rtwalk implements the gradient-free version of the move (Section 2.3
+of the paper), which needs nothing beyond the log posterior. It is off
+by default and is turned on with
+<code>twalk_control(penalty_prob = ...)</code>. This document explains
+the move, checks the implementation against the paper, and reproduces
+the paper’s examples.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(Rtwalk)</span></code></pre></div>
+<div id="the-move" class="section level2">
+<h2>1. The move</h2>
+<p>The t-walk keeps two points, <span class="math inline">\(x\)</span>
+and <span class="math inline">\(x&#39;\)</span>, and targets <span class="math inline">\(\pi(x)\pi(x&#39;)\)</span>. The penalised move
+summarises the current pair by its midpoint <span class="math inline">\(\mu = (x + x&#39;)/2\)</span> and its
+coordinate-wise scale <span class="math inline">\(s = |x -
+x&#39;|\)</span>. It draws a new centre <span class="math inline">\(w\)</span> from a heavy-tailed distribution around
+<span class="math inline">\(\mu\)</span> whose density has been
+<em>penalised</em> near <span class="math inline">\(\mu\)</span>, so
+that points far from the current location are favoured, and then shifts
+both points by the same vector:</p>
+<p><span class="math display">\[u = x + (w - \mu), \qquad v = x&#39; +
+(w - \mu) \qquad \text{(equation 5)},\]</span></p>
+<p>or, with the labels exchanged, <span class="math inline">\(u = x&#39;
++ (w - \mu)\)</span> and <span class="math inline">\(v = x + (w -
+\mu)\)</span> (equation 6). The existing four moves update only one of
+the two points at a time, which the authors note could leave them stuck
+in different modes; this move carries both together.</p>
+<p>The default configuration of the paper (Section 3), which Rtwalk
+uses, is:</p>
+<ul>
+<li>the proposal <span class="math inline">\(g\)</span> is a
+multivariate <span class="math inline">\(t\)</span> distribution with 1
+degree of freedom, centre <span class="math inline">\(\mu\)</span> and
+scale <span class="math inline">\(\kappa s\)</span>, with <span class="math inline">\(\kappa = 3\)</span>;</li>
+<li>the penalty is <span class="math inline">\(\varphi(w) = 1 -
+\rho(z)/\rho(0)\)</span>, where <span class="math inline">\(\rho\)</span> is the multivariate <span class="math inline">\(t\)</span> density with 2 degrees of freedom and
+<span class="math inline">\(z = (w - \mu)/s\)</span>. In <span class="math inline">\(d\)</span> dimensions this is <span class="math inline">\(\varphi(w) = 1 - (1 + \lVert
+z\rVert^2/2)^{-(d+2)/2}\)</span>, which is zero at <span class="math inline">\(\mu\)</span> and tends to one far from it;</li>
+<li><span class="math inline">\(w\)</span> is drawn from the penalised
+density <span class="math inline">\(g\varphi\)</span> by rejection
+(Algorithm 2): draw <span class="math inline">\(w\)</span> from <span class="math inline">\(g\)</span> and a uniform <span class="math inline">\(\omega\)</span>, and keep <span class="math inline">\(w\)</span> if <span class="math inline">\(\omega
+\le \varphi(w)\)</span>.</li>
+</ul>
+<table>
+<colgroup>
+<col width="29%" />
+<col width="37%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Paper</th>
+<th align="left">Content</th>
+<th align="left">Rtwalk</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Sec. 2.3, Algorithm 2</td>
+<td align="left">rejection sampler for <span class="math inline">\(g\varphi\)</span></td>
+<td align="left"><code>penalty_shift()</code></td>
+</tr>
+<tr class="even">
+<td align="left">Sec. 2.3, eqs. (5)–(6)</td>
+<td align="left">shift of both points, optional exchange</td>
+<td align="left"><code>penalty_step()</code> in the engines</td>
+</tr>
+<tr class="odd">
+<td align="left">Sec. 2.3, eq. (9)</td>
+<td align="left">acceptance ratio</td>
+<td align="left">see below</td>
+</tr>
+<tr class="even">
+<td align="left">Sec. 3</td>
+<td align="left"><span class="math inline">\(\kappa = 3\)</span>, <span class="math inline">\(t_1\)</span> proposal, <span class="math inline">\(t_2\)</span> penalty</td>
+<td align="left"><code>twalk_control(penalty_kappa = 3)</code></td>
+</tr>
+<tr class="odd">
+<td align="left">Sec. 3, Example 2</td>
+<td align="left">move used in about 10% of iterations</td>
+<td align="left"><code>twalk_control(penalty_prob = 0.1)</code></td>
+</tr>
+</tbody>
+</table>
+<div id="the-acceptance-ratio" class="section level3">
+<h3>The acceptance ratio</h3>
+<p>Equation (9) of the paper gives the Metropolis–Hastings ratio</p>
+<p><span class="math display">\[r = \frac{\pi(u)\,\pi(v)\;
+g(\mu_{xx&#39;} \mid u, v)\; \varphi_{uv}(\mu_{xx&#39;})}
+{\pi(x)\,\pi(x&#39;)\; g(w \mid x, x&#39;)\;
+\varphi_{xx&#39;}(w)}.\]</span></p>
+<p>It simplifies. The shift preserves the difference between the two
+points, <span class="math inline">\(|u - v| = |x - x&#39;|\)</span>, so
+the scale is the same before and after the move, and the midpoint of
+<span class="math inline">\((u, v)\)</span> is <span class="math inline">\(w\)</span>. Since <span class="math inline">\(g\)</span> and <span class="math inline">\(\rho\)</span> are symmetric location-scale
+densities, the reverse proposal has the same density as the forward one:
+<span class="math inline">\(g(\mu_{xx&#39;} \mid u, v) = g(w \mid x,
+x&#39;)\)</span> and <span class="math inline">\(\varphi_{uv}(\mu_{xx&#39;}) =
+\varphi_{xx&#39;}(w)\)</span>. The normalising constants of the
+penalised proposals are equal too (Proposition 2 of the paper). Each of
+equations (5) and (6) is its own inverse, so choosing between them with
+a fixed probability (Rtwalk uses 1/2) keeps the move reversible. What
+remains is</p>
+<p><span class="math display">\[r =
+\frac{\pi(u)\,\pi(v)}{\pi(x)\,\pi(x&#39;)}.\]</span></p>
+<p>A penalised move therefore costs two evaluations of the log posterior
+(Rtwalk skips the second one when the first point falls outside the
+support), and no proposal density needs to be computed.</p>
+<p>Coordinates in which <span class="math inline">\(x_j =
+x&#39;_j\)</span> have zero scale. They are left unchanged, and the
+dimension of <span class="math inline">\(\rho\)</span> is then the
+number of remaining coordinates; the move is still reversible because it
+preserves which coordinates are equal.</p>
+</div>
+</div>
+<div id="the-rejection-sampler-table-1-of-the-paper" class="section level2">
+<h2>2. The rejection sampler: Table 1 of the paper</h2>
+<p>By Proposition 2 of the paper, the acceptance probability of the
+rejection step does not depend on the state; it is <span class="math inline">\(Z = 1 - \rho(0)^{-1}\int g(w)\,\rho(\kappa
+w)\,dw\)</span>, and Table 1 reports it for several dimensions <span class="math inline">\(d\)</span> and values of <span class="math inline">\(\kappa\)</span>. Since <span class="math inline">\(Z\)</span> is the mean of <span class="math inline">\(\varphi\)</span> under the proposal, it can be
+estimated precisely from draws of <span class="math inline">\(g\)</span>
+alone. With <span class="math inline">\(z \sim N(0, I_d)\)</span> and
+<span class="math inline">\(\zeta \sim N(0, 1)\)</span>, a draw of the
+standardised proposal is <span class="math inline">\(\kappa
+z/|\zeta|\)</span>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>penalty_rate <span class="ot">&lt;-</span> <span class="cf">function</span>(d, kappa, <span class="at">n =</span> <span class="fl">1e6</span>) {</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  zeta <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  q <span class="ot">&lt;-</span> kappa<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> <span class="fu">rowSums</span>(<span class="fu">matrix</span>(<span class="fu">rnorm</span>(n <span class="sc">*</span> d), n)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> zeta<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="fu">mean</span>(<span class="dv">1</span> <span class="sc">-</span> (<span class="dv">1</span> <span class="sc">+</span> q <span class="sc">/</span> <span class="dv">2</span>)<span class="sc">^</span>(<span class="sc">-</span>(d <span class="sc">+</span> <span class="dv">2</span>) <span class="sc">/</span> <span class="dv">2</span>))</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>}</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>paper <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  <span class="st">&quot;d = 2&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="fl">0.8671</span>, <span class="fl">0.9275</span>, <span class="fl">0.9551</span>),</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  <span class="st">&quot;d = 4&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="fl">0.9802</span>, <span class="fl">0.9931</span>, <span class="fl">0.9970</span>),</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  <span class="st">&quot;d = 8&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="fl">0.9993</span>, <span class="fl">0.9999</span>, <span class="cn">NA</span>)</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>)</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>ours <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">sapply</span>(<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">8</span>), <span class="cf">function</span>(d) {</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>  <span class="fu">sapply</span>(<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>), <span class="cf">function</span>(kappa) <span class="fu">penalty_rate</span>(d, kappa))</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>}))</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="fu">dimnames</span>(ours) <span class="ot">&lt;-</span> <span class="fu">dimnames</span>(paper) <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="fu">rownames</span>(paper), <span class="fu">paste</span>(<span class="st">&quot;kappa =&quot;</span>, <span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>))</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="fu">round</span>(paper, <span class="dv">4</span>)</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt;       kappa = 2 kappa = 3 kappa = 4</span></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt; d = 2    0.8671    0.9275    0.9551</span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt; d = 4    0.9802    0.9931    0.9970</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co">#&gt; d = 8    0.9993    0.9999        NA</span></span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="fu">round</span>(ours, <span class="dv">4</span>)</span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a><span class="co">#&gt;       kappa = 2 kappa = 3 kappa = 4</span></span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a><span class="co">#&gt; d = 2    0.8695    0.9268    0.9536</span></span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a><span class="co">#&gt; d = 4    0.9791    0.9931    0.9971</span></span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a><span class="co">#&gt; d = 8    0.9994    0.9999    1.0000</span></span></code></pre></div>
+<p>The two tables agree to the precision of the Monte Carlo estimates
+(the paper reports the entry for <span class="math inline">\(d =
+8\)</span>, <span class="math inline">\(\kappa = 4\)</span> only as
+<span class="math inline">\(&gt; 1 - 10^{-5}\)</span>). The same rate
+can be measured on the sampler itself, from the number of trials that
+<code>penalty_shift()</code> needs:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>trials <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="fu">seq_len</span>(<span class="fl">1e5</span>), <span class="cf">function</span>(i) {</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  Rtwalk<span class="sc">:::</span><span class="fu">penalty_shift</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>), <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>), <span class="at">kappa =</span> <span class="dv">3</span>)<span class="sc">$</span>n_trials</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>}, <span class="fu">integer</span>(<span class="dv">1</span>))</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">c</span>(<span class="at">paper =</span> <span class="fl">0.9275</span>, <span class="at">sampler =</span> <span class="fl">1e5</span> <span class="sc">/</span> <span class="fu">sum</span>(trials))</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt;     paper   sampler </span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt; 0.9275000 0.9269817</span></span></code></pre></div>
+<p>The distribution of the shift itself can be compared with the
+penalised density. In one dimension with scale 1 the shift has density
+proportional to a Cauchy density with scale <span class="math inline">\(\kappa\)</span> times <span class="math inline">\(1 - (1 + t^2/2)^{-3/2}\)</span>:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">3</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>shifts <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="fu">seq_len</span>(<span class="fl">1e5</span>), <span class="cf">function</span>(i) {</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  Rtwalk<span class="sc">:::</span><span class="fu">penalty_shift</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">kappa =</span> <span class="dv">3</span>)<span class="sc">$</span>delta</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>}, <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>penalised <span class="ot">&lt;-</span> <span class="cf">function</span>(t) <span class="fu">dcauchy</span>(t, <span class="at">scale =</span> <span class="dv">3</span>) <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> (<span class="dv">1</span> <span class="sc">+</span> t<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="dv">2</span>)<span class="sc">^</span>(<span class="sc">-</span><span class="dv">3</span> <span class="sc">/</span> <span class="dv">2</span>))</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co"># The histogram shows the draws in (-20, 20), so normalise over that range.</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>z_const <span class="ot">&lt;-</span> <span class="fu">integrate</span>(penalised, <span class="sc">-</span><span class="dv">20</span>, <span class="dv">20</span>)<span class="sc">$</span>value</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>kept <span class="ot">&lt;-</span> shifts[<span class="fu">abs</span>(shifts) <span class="sc">&lt;</span> <span class="dv">20</span>]</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="fu">hist</span>(kept, <span class="at">breaks =</span> <span class="dv">200</span>, <span class="at">freq =</span> <span class="cn">FALSE</span>, <span class="at">border =</span> <span class="cn">NA</span>, <span class="at">col =</span> <span class="st">&quot;grey75&quot;</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Shift of the penalised move (d = 1, scale 1)&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;w - mu&quot;</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>     <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.09</span>))</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="fu">curve</span>(<span class="fu">penalised</span>(x) <span class="sc">/</span> z_const, <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">&quot;firebrick&quot;</span>, <span class="at">n =</span> <span class="dv">1001</span>)</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">&quot;topright&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;draws&quot;</span>, <span class="st">&quot;penalised density&quot;</span>), <span class="at">bty =</span> <span class="st">&quot;n&quot;</span>,</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>       <span class="at">fill =</span> <span class="fu">c</span>(<span class="st">&quot;grey75&quot;</span>, <span class="cn">NA</span>), <span class="at">border =</span> <span class="cn">NA</span>, <span class="at">lwd =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="dv">2</span>),</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>       <span class="at">col =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="st">&quot;firebrick&quot;</span>))</span></code></pre></div>
+<div class="figure">
+<img role="img" aria-label="plot of chunk shift-density" src="data:image/png;base64,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" alt="plot of chunk shift-density" width="100%" />
+<p class="caption">
+plot of chunk shift-density
+</p>
+</div>
+<p>The density vanishes at the current midpoint, so the move never
+proposes to stay where the pair is.</p>
+</div>
+<div id="example-2-two-well-separated-modes" class="section level2">
+<h2>3. Example 2: two well-separated modes</h2>
+<p>Example 1 of the paper is a mixture of two bivariate Gaussians with
+very different shapes,</p>
+<p><span class="math display">\[\pi(x) = 0.5\,N(x \mid \mu_1, \Sigma_1)
++ 0.5\,N(x \mid \mu_2, \Sigma_2),\]</span></p>
+<p>with <span class="math inline">\(\mu_1 = (0, 0)\)</span>, <span class="math inline">\(\mu_2 = (20, -20)\)</span>, unit variances and
+correlation 0.1 in <span class="math inline">\(\Sigma_1\)</span>, and
+standard deviations 4 and 5 with correlation 0.8 in <span class="math inline">\(\Sigma_2\)</span>. Example 2 runs the standard and
+the penalised t-walk on it for 5 million iterations, with the penalised
+move in 10% of them.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>mixture <span class="ot">&lt;-</span> <span class="cf">function</span>(w) {</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  mu2 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">20</span>, <span class="sc">-</span><span class="dv">20</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  sigma1 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="dv">1</span>), <span class="dv">2</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  sigma2 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">16</span>, <span class="dv">16</span>, <span class="dv">16</span>, <span class="dv">25</span>), <span class="dv">2</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  prec1 <span class="ot">&lt;-</span> <span class="fu">solve</span>(sigma1)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  prec2 <span class="ot">&lt;-</span> <span class="fu">solve</span>(sigma2)</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  const1 <span class="ot">&lt;-</span> <span class="fu">log</span>(w) <span class="sc">-</span> <span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">log</span>(<span class="fu">det</span>(sigma1))</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  const2 <span class="ot">&lt;-</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> w) <span class="sc">-</span> <span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">log</span>(<span class="fu">det</span>(sigma2))</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  <span class="cf">function</span>(x) {</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>    d2 <span class="ot">&lt;-</span> x <span class="sc">-</span> mu2</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>    a <span class="ot">&lt;-</span> const1 <span class="sc">-</span> <span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">sum</span>(x <span class="sc">*</span> (prec1 <span class="sc">%*%</span> x))</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>    b <span class="ot">&lt;-</span> const2 <span class="sc">-</span> <span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">sum</span>(d2 <span class="sc">*</span> (prec2 <span class="sc">%*%</span> d2))</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">max</span>(a, b)</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>    m <span class="sc">+</span> <span class="fu">log</span>(<span class="fu">exp</span>(a <span class="sc">-</span> m) <span class="sc">+</span> <span class="fu">exp</span>(b <span class="sc">-</span> m))</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>  }</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>}</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>log_example1 <span class="ot">&lt;-</span> <span class="fu">mixture</span>(<span class="fl">0.5</span>)</span></code></pre></div>
+<p>To see how often each sampler leaves the first mode, we run 16 chains
+of 5 million iterations each, all started as in the paper with both
+points near the first mode, and store every 10th iteration.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>run_example2 <span class="ot">&lt;-</span> <span class="cf">function</span>(penalty_prob) {</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  start <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>), <span class="dv">16</span>, <span class="dv">2</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="fu">twalk</span>(log_example1, <span class="at">n_iter =</span> <span class="fl">5e6</span>, <span class="at">x0 =</span> start, <span class="at">xp0 =</span> start <span class="sc">+</span> <span class="fl">0.5</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>        <span class="at">n_chains =</span> <span class="dv">16</span>, <span class="at">n_cores =</span> <span class="fu">min</span>(<span class="dv">8</span>, parallel<span class="sc">::</span><span class="fu">detectCores</span>()), <span class="at">thin =</span> <span class="dv">10</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>        <span class="at">show_progress =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>        <span class="at">control =</span> <span class="fu">twalk_control</span>(<span class="at">penalty_prob =</span> penalty_prob,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>                                <span class="at">store_companion =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>}</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>standard <span class="ot">&lt;-</span> <span class="fu">run_example2</span>(<span class="dv">0</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>penalised <span class="ot">&lt;-</span> <span class="fu">run_example2</span>(<span class="fl">0.1</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>chain_stats <span class="ot">&lt;-</span> <span class="cf">function</span>(fit) {</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  per_chain <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">vapply</span>(fit<span class="sc">$</span>individual_chains, <span class="cf">function</span>(chain) {</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>    in_second <span class="ot">&lt;-</span> chain<span class="sc">$</span>samples[, <span class="dv">1</span>] <span class="sc">&gt;</span> <span class="dv">10</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>    <span class="fu">c</span>(<span class="at">reached =</span> <span class="fu">any</span>(in_second), <span class="at">switches =</span> <span class="fu">sum</span>(<span class="fu">diff</span>(in_second) <span class="sc">!=</span> <span class="dv">0</span>),</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>      <span class="at">second =</span> <span class="fu">mean</span>(in_second))</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  }, <span class="fu">numeric</span>(<span class="dv">3</span>)))</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  stats <span class="ot">&lt;-</span> fit<span class="sc">$</span>kernel_statistics</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="fu">c</span>(</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>    <span class="st">&quot;chains that reach the second mode&quot;</span> <span class="ot">=</span> <span class="fu">sum</span>(per_chain[, <span class="st">&quot;reached&quot;</span>]),</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>    <span class="st">&quot;median mode switches per chain&quot;</span> <span class="ot">=</span> stats<span class="sc">::</span><span class="fu">median</span>(per_chain[, <span class="st">&quot;switches&quot;</span>]),</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>    <span class="st">&quot;mean acceptance (%)&quot;</span> <span class="ot">=</span> <span class="dv">100</span> <span class="sc">*</span> fit<span class="sc">$</span>acceptance_rate,</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>    <span class="st">&quot;penalised move acceptance (%)&quot;</span> <span class="ot">=</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>      <span class="cf">if</span> (<span class="fu">nrow</span>(stats) <span class="sc">==</span> <span class="dv">5</span>) <span class="dv">100</span> <span class="sc">*</span> stats<span class="sc">$</span>acceptance_rate[<span class="dv">5</span>] <span class="cf">else</span> <span class="cn">NA</span>,</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>    <span class="st">&quot;evaluations per iteration&quot;</span> <span class="ot">=</span> fit<span class="sc">$</span>n_evaluations <span class="sc">/</span> fit<span class="sc">$</span>total_iterations</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>  )</span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>}</span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">cbind</span>(<span class="at">standard =</span> <span class="fu">chain_stats</span>(standard), <span class="at">penalised =</span> <span class="fu">chain_stats</span>(penalised)), <span class="dv">2</span>)</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="co">#&gt;                                   standard penalised</span></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co">#&gt; chains that reach the second mode     9.00     16.00</span></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="co">#&gt; median mode switches per chain      268.00   1362.50</span></span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="co">#&gt; mean acceptance (%)                  35.46     19.37</span></span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a><span class="co">#&gt; penalised move acceptance (%)           NA      3.84</span></span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="co">#&gt; evaluations per iteration             1.00      1.10</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>op <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">2</span>, <span class="dv">1</span>))</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>keep <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="fl">5e5</span>, <span class="at">by =</span> <span class="dv">50</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="cf">for</span> (name <span class="cf">in</span> <span class="fu">c</span>(<span class="st">&quot;standard&quot;</span>, <span class="st">&quot;penalised&quot;</span>)) {</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  chain <span class="ot">&lt;-</span> <span class="fu">get</span>(name)<span class="sc">$</span>individual_chains[[<span class="dv">1</span>]]</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="fu">matplot</span>(<span class="dv">10</span> <span class="sc">*</span> keep, chain<span class="sc">$</span>samples[keep, ], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">lty =</span> <span class="dv">1</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>          <span class="at">col =</span> <span class="fu">c</span>(<span class="st">&quot;steelblue&quot;</span>, <span class="st">&quot;darkorange&quot;</span>), <span class="at">xlab =</span> <span class="st">&quot;iteration&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;x&quot;</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>          <span class="at">main =</span> <span class="fu">paste</span>(name, <span class="st">&quot;t-walk, chain 1&quot;</span>))</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>}</span></code></pre></div>
+<div class="figure">
+<img role="img" aria-label="plot of chunk example2-trace" src="data:image/png;base64,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" alt="plot of chunk example2-trace" width="100%" />
+<p class="caption">
+plot of chunk example2-trace
+</p>
+</div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">par</span>(op)</span></code></pre></div>
+<p>The penalised t-walk reaches the second mode in every chain and
+switches between the modes regularly. The global acceptance rate falls
+from about 35% to 19%, and the penalised move is accepted about 4% of
+the time; the paper reports 33%, 16% and 3%. The paper does not give its
+seeds, the choice between equations (5) and (6) or the code of its
+implementation, so close but not exact agreement is what we expect.</p>
+<p>The standard t-walk does better here than in the paper, where it
+visits the second mode only three times in 5 million iterations (Figure
+2, which compares it with the gradient-based penalty). Some of our
+standard chains reach the second mode, and some of them then switch
+often. The reason is the mechanism of the t-walk itself: the Traverse
+move sends one point past the other along the direction <span class="math inline">\(x - x&#39;\)</span>, so when the two points sit in
+different modes it can carry a point across the gap. What the standard
+t-walk cannot easily do is the first crossing, when both points are in
+the same mode and <span class="math inline">\(|x - x&#39;|\)</span> is
+small compared with the distance between the modes. That is the
+situation the penalised move is designed for, since it proposes
+distances several times larger than <span class="math inline">\(|x -
+x&#39;|\)</span> with a heavy tail.</p>
+<div id="are-the-mode-weights-right" class="section level3">
+<h3>Are the mode weights right?</h3>
+<p>Switching modes is not enough: the chain must also spend the right
+fraction of time in each. This is hard to check on a single chain,
+because the switches are rare and the time between them varies a lot,
+and because chains started in one mode are biased towards it for a long
+time. The clean check removes the second problem: start each chain from
+exact draws of the target, so that it is stationary from the first
+iteration and the average time in each mode is an unbiased estimate of
+its weight, whatever the length of the chain.</p>
+<p>We use a version of the target with unequal weights, 0.3 and 0.7, and
+64 chains of a million iterations.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>log_unequal <span class="ot">&lt;-</span> <span class="fu">mixture</span>(<span class="fl">0.3</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>draw_unequal <span class="ot">&lt;-</span> <span class="cf">function</span>(n) {</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  second <span class="ot">&lt;-</span> <span class="fu">runif</span>(n) <span class="sc">&gt;</span> <span class="fl">0.3</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  z <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(<span class="dv">2</span> <span class="sc">*</span> n), n)</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  x <span class="ot">&lt;-</span> z <span class="sc">%*%</span> <span class="fu">chol</span>(<span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="dv">1</span>), <span class="dv">2</span>))</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">sweep</span>(z <span class="sc">%*%</span> <span class="fu">chol</span>(<span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">16</span>, <span class="dv">16</span>, <span class="dv">16</span>, <span class="dv">25</span>), <span class="dv">2</span>)), <span class="dv">2</span>, <span class="fu">c</span>(<span class="dv">20</span>, <span class="sc">-</span><span class="dv">20</span>), <span class="st">&quot;+&quot;</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  x[second, ] <span class="ot">&lt;-</span> y[second, ]</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>  x</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>}</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>run_weights <span class="ot">&lt;-</span> <span class="cf">function</span>(penalty_prob) {</span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">64</span>)</span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>  fit <span class="ot">&lt;-</span> <span class="fu">twalk</span>(log_unequal, <span class="at">n_iter =</span> <span class="fl">1e6</span>, <span class="at">x0 =</span> <span class="fu">draw_unequal</span>(<span class="dv">64</span>),</span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>               <span class="at">xp0 =</span> <span class="fu">draw_unequal</span>(<span class="dv">64</span>), <span class="at">n_chains =</span> <span class="dv">64</span>,</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>               <span class="at">n_cores =</span> <span class="fu">min</span>(<span class="dv">8</span>, parallel<span class="sc">::</span><span class="fu">detectCores</span>()), <span class="at">thin =</span> <span class="dv">10</span>,</span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>               <span class="at">show_progress =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>               <span class="at">control =</span> <span class="fu">twalk_control</span>(<span class="at">penalty_prob =</span> penalty_prob,</span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a>                                       <span class="at">store_companion =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>  <span class="fu">vapply</span>(fit<span class="sc">$</span>individual_chains, <span class="cf">function</span>(chain) {</span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a>    <span class="fu">mean</span>(chain<span class="sc">$</span>samples[, <span class="dv">1</span>] <span class="sc">&gt;</span> <span class="dv">10</span>)</span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a>  }, <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a>}</span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a>fraction <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="fu">c</span>(<span class="at">standard =</span> <span class="dv">0</span>, <span class="at">penalised =</span> <span class="fl">0.1</span>), run_weights)</span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a><span class="fu">rbind</span>(<span class="at">exact =</span> <span class="fl">0.7</span>, <span class="at">mean =</span> <span class="fu">colMeans</span>(fraction),</span>
+<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a>      <span class="at">std_error =</span> <span class="fu">apply</span>(fraction, <span class="dv">2</span>, sd) <span class="sc">/</span> <span class="fu">sqrt</span>(<span class="dv">64</span>))</span>
+<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a><span class="co">#&gt;            standard  penalised</span></span>
+<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="co">#&gt; exact     0.7000000 0.70000000</span></span>
+<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a><span class="co">#&gt; mean      0.7203787 0.70860937</span></span>
+<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a><span class="co">#&gt; std_error 0.0352032 0.02316482</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">hist</span>(fraction[, <span class="st">&quot;penalised&quot;</span>], <span class="at">breaks =</span> <span class="dv">20</span>, <span class="at">col =</span> <span class="st">&quot;grey75&quot;</span>, <span class="at">border =</span> <span class="st">&quot;white&quot;</span>,</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Penalised t-walk: time in the second mode, 64 chains&quot;</span>,</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">&quot;fraction&quot;</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> <span class="fl">0.7</span>, <span class="at">col =</span> <span class="st">&quot;firebrick&quot;</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span></code></pre></div>
+<div class="figure">
+<img role="img" aria-label="plot of chunk weights-hist" src="data:image/png;base64,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" alt="plot of chunk weights-hist" width="100%" />
+<p class="caption">
+plot of chunk weights-hist
+</p>
+</div>
+<p>Both samplers estimate the weight without bias, as they should: each
+one leaves the target invariant, and started from the target each one
+stays there. This is the check that the penalised move is correct. The
+difference between them is the precision: the penalised chains vary less
+from one to another, so the standard error of their average is
+smaller.</p>
+<p>In practice chains do not start from the target. Started in one mode,
+they are biased towards it until they have switched modes many times;
+for the standard t-walk, in Example 2, some chains never switched at
+all. On a multimodal target, run several chains from dispersed starting
+points and compare them before trusting the estimated weights.</p>
+</div>
+</div>
+<div id="example-3-nine-modes-in-three-dimensions" class="section level2">
+<h2>4. Example 3: nine modes in three dimensions</h2>
+<p>Example 3 is a mixture of nine spherical Gaussians in three
+dimensions: eight centred at the vertices of the cube <span class="math inline">\(\{-10, 10\}^3\)</span> and one at <span class="math inline">\((30, 30, 30)\)</span> with variance 10. The paper
+says only that the variances of the first eight “range from 0.25 to 10”,
+so we space them evenly in that range. All components have the same
+weight.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>centres <span class="ot">&lt;-</span> <span class="fu">rbind</span>(<span class="fu">as.matrix</span>(<span class="fu">expand.grid</span>(<span class="fu">c</span>(<span class="dv">10</span>, <span class="sc">-</span><span class="dv">10</span>), <span class="fu">c</span>(<span class="dv">10</span>, <span class="sc">-</span><span class="dv">10</span>), <span class="fu">c</span>(<span class="dv">10</span>, <span class="sc">-</span><span class="dv">10</span>))),</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>                 <span class="fu">c</span>(<span class="dv">30</span>, <span class="dv">30</span>, <span class="dv">30</span>))</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>variances <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">seq</span>(<span class="fl">0.25</span>, <span class="dv">10</span>, <span class="at">length.out =</span> <span class="dv">8</span>), <span class="dv">10</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>log_example3 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>  a <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fl">1.5</span> <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span> variances) <span class="sc">-</span></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>    <span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">colSums</span>((<span class="fu">t</span>(centres) <span class="sc">-</span> x)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> variances</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>  m <span class="ot">&lt;-</span> <span class="fu">max</span>(a)</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>  m <span class="sc">+</span> <span class="fu">log</span>(<span class="fu">sum</span>(<span class="fu">exp</span>(a <span class="sc">-</span> m)))</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>}</span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>nearest_mode <span class="ot">&lt;-</span> <span class="cf">function</span>(samples) {</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>  <span class="fu">apply</span>(samples, <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="fu">which.min</span>(<span class="fu">colSums</span>((<span class="fu">t</span>(centres) <span class="sc">-</span> x)<span class="sc">^</span><span class="dv">2</span>)))</span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>}</span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a></span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a>run_example3 <span class="ot">&lt;-</span> <span class="cf">function</span>(penalty_prob) {</span>
+<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">3</span>)</span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a>  <span class="fu">twalk</span>(log_example3, <span class="at">n_iter =</span> <span class="fl">1e6</span>, <span class="at">x0 =</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">10</span>, <span class="dv">10</span>), <span class="at">xp0 =</span> <span class="fu">c</span>(<span class="fl">10.5</span>, <span class="fl">10.5</span>, <span class="fl">10.5</span>),</span>
+<span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a>        <span class="at">show_progress =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a>        <span class="at">control =</span> <span class="fu">twalk_control</span>(<span class="at">penalty_prob =</span> penalty_prob,</span>
+<span id="cb12-19"><a href="#cb12-19" tabindex="-1"></a>                                <span class="at">store_companion =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb12-20"><a href="#cb12-20" tabindex="-1"></a>}</span>
+<span id="cb12-21"><a href="#cb12-21" tabindex="-1"></a>example3 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">c</span>(<span class="at">standard =</span> <span class="dv">0</span>, <span class="at">penalised =</span> <span class="fl">0.1</span>), run_example3)</span>
+<span id="cb12-22"><a href="#cb12-22" tabindex="-1"></a></span>
+<span id="cb12-23"><a href="#cb12-23" tabindex="-1"></a>occupancy <span class="ot">&lt;-</span> <span class="fu">sapply</span>(example3, <span class="cf">function</span>(fit) {</span>
+<span id="cb12-24"><a href="#cb12-24" tabindex="-1"></a>  modes <span class="ot">&lt;-</span> <span class="fu">nearest_mode</span>(fit<span class="sc">$</span>samples[<span class="fu">seq</span>(<span class="dv">1</span>, <span class="fl">1e6</span>, <span class="at">by =</span> <span class="dv">10</span>), ])</span>
+<span id="cb12-25"><a href="#cb12-25" tabindex="-1"></a>  <span class="fu">tabulate</span>(modes, <span class="dv">9</span>) <span class="sc">/</span> <span class="fu">length</span>(modes)</span>
+<span id="cb12-26"><a href="#cb12-26" tabindex="-1"></a>})</span>
+<span id="cb12-27"><a href="#cb12-27" tabindex="-1"></a><span class="fu">rownames</span>(occupancy) <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">&quot;mode&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>)</span>
+<span id="cb12-28"><a href="#cb12-28" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">rbind</span>(occupancy, <span class="st">&quot;acceptance&quot;</span> <span class="ot">=</span> <span class="fu">sapply</span>(example3, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">&quot;acceptance_rate&quot;</span>)), <span class="dv">3</span>)</span>
+<span id="cb12-29"><a href="#cb12-29" tabindex="-1"></a><span class="co">#&gt;            standard penalised</span></span>
+<span id="cb12-30"><a href="#cb12-30" tabindex="-1"></a><span class="co">#&gt; mode 1        1.000     0.145</span></span>
+<span id="cb12-31"><a href="#cb12-31" tabindex="-1"></a><span class="co">#&gt; mode 2        0.000     0.139</span></span>
+<span id="cb12-32"><a href="#cb12-32" tabindex="-1"></a><span class="co">#&gt; mode 3        0.000     0.102</span></span>
+<span id="cb12-33"><a href="#cb12-33" tabindex="-1"></a><span class="co">#&gt; mode 4        0.000     0.136</span></span>
+<span id="cb12-34"><a href="#cb12-34" tabindex="-1"></a><span class="co">#&gt; mode 5        0.000     0.115</span></span>
+<span id="cb12-35"><a href="#cb12-35" tabindex="-1"></a><span class="co">#&gt; mode 6        0.000     0.118</span></span>
+<span id="cb12-36"><a href="#cb12-36" tabindex="-1"></a><span class="co">#&gt; mode 7        0.000     0.103</span></span>
+<span id="cb12-37"><a href="#cb12-37" tabindex="-1"></a><span class="co">#&gt; mode 8        0.000     0.084</span></span>
+<span id="cb12-38"><a href="#cb12-38" tabindex="-1"></a><span class="co">#&gt; mode 9        0.000     0.058</span></span>
+<span id="cb12-39"><a href="#cb12-39" tabindex="-1"></a><span class="co">#&gt; acceptance    0.326     0.046</span></span></code></pre></div>
+<p>The standard t-walk stays in the mode where it starts. The penalised
+t-walk visits all nine within the first million iterations, as in the
+paper, with a global acceptance of about 5% (the paper reports 4%). Each
+mode has weight 1/9 = 0.111; one million iterations are not enough to
+estimate these weights precisely, which matches the paper’s remark that
+convergence is slow but the method at least exposes the
+multimodality.</p>
+</div>
+<div id="example-4-a-mixture-of-bananas-in-ten-dimensions" class="section level2">
+<h2>5. Example 4: a mixture of bananas in ten dimensions</h2>
+<p>Example 4 is a mixture of three “banana-shaped” distributions in ten
+dimensions, <span class="math inline">\(\pi(x) \propto \sum_{i=1}^{3}
+N(\phi_{b_i}(x) \mid \mu_i, \Sigma)\)</span>, with <span class="math inline">\(\mu_i\)</span> equal to <span class="math inline">\(-3\)</span>, <span class="math inline">\(0\)</span> and <span class="math inline">\(3\)</span> in every coordinate, <span class="math inline">\(b = (-0.03, 0, 0.03)\)</span> and <span class="math inline">\(\Sigma = \mathrm{diag}(100, 1, \ldots,
+1)\)</span>. The paper prints the transformation as <span class="math inline">\(\phi_b(x) = (x_1 + b x_1^2 - 100b, x_2, \ldots,
+x_d)\)</span>; we use the usual banana transformation of Haario et al.,
+<span class="math inline">\(\phi_b(x) = (x_1, x_2 + b x_1^2 - 100b, x_3,
+\ldots, x_d)\)</span>, which bends the second coordinate and has unit
+Jacobian. With it the acceptance rates match those of the paper
+closely.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>bend <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.03</span>, <span class="dv">0</span>, <span class="fl">0.03</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>centre <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">3</span>, <span class="dv">0</span>, <span class="dv">3</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>log_example4 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  a <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="cf">function</span>(i) {</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>    y <span class="ot">&lt;-</span> x</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>    y[<span class="dv">2</span>] <span class="ot">&lt;-</span> x[<span class="dv">2</span>] <span class="sc">+</span> bend[i] <span class="sc">*</span> x[<span class="dv">1</span>]<span class="sc">^</span><span class="dv">2</span> <span class="sc">-</span> <span class="dv">100</span> <span class="sc">*</span> bend[i]</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>    <span class="sc">-</span><span class="fl">0.5</span> <span class="sc">*</span> ((y[<span class="dv">1</span>] <span class="sc">-</span> centre[i])<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="dv">100</span> <span class="sc">+</span> <span class="fu">sum</span>((y[<span class="sc">-</span><span class="dv">1</span>] <span class="sc">-</span> centre[i])<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>  }, <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>  m <span class="ot">&lt;-</span> <span class="fu">max</span>(a)</span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>  m <span class="sc">+</span> <span class="fu">log</span>(<span class="fu">sum</span>(<span class="fu">exp</span>(a <span class="sc">-</span> m)))</span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a>}</span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a>run_example4 <span class="ot">&lt;-</span> <span class="cf">function</span>(penalty_prob) {</span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">4</span>)</span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a>  <span class="fu">twalk</span>(log_example4, <span class="at">n_iter =</span> <span class="fl">1e6</span>, <span class="at">x0 =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">10</span>), <span class="at">xp0 =</span> <span class="fu">rep</span>(<span class="fl">0.5</span>, <span class="dv">10</span>),</span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a>        <span class="at">show_progress =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a>        <span class="at">control =</span> <span class="fu">twalk_control</span>(<span class="at">penalty_prob =</span> penalty_prob,</span>
+<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a>                                <span class="at">store_companion =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a>}</span>
+<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a>example4 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">c</span>(<span class="at">standard =</span> <span class="dv">0</span>, <span class="at">penalised =</span> <span class="fl">0.1</span>), run_example4)</span>
+<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a></span>
+<span id="cb13-22"><a href="#cb13-22" tabindex="-1"></a>iat <span class="ot">&lt;-</span> <span class="cf">function</span>(fit) {</span>
+<span id="cb13-23"><a href="#cb13-23" tabindex="-1"></a>  lp <span class="ot">&lt;-</span> fit<span class="sc">$</span>log_posterior[<span class="sc">-</span>(<span class="dv">1</span><span class="sc">:</span><span class="fl">1e5</span>)]</span>
+<span id="cb13-24"><a href="#cb13-24" tabindex="-1"></a>  <span class="fu">length</span>(lp) <span class="sc">/</span> coda<span class="sc">::</span><span class="fu">effectiveSize</span>(lp)</span>
+<span id="cb13-25"><a href="#cb13-25" tabindex="-1"></a>}</span>
+<span id="cb13-26"><a href="#cb13-26" tabindex="-1"></a>penalty_acceptance <span class="ot">&lt;-</span> example4<span class="sc">$</span>penalised<span class="sc">$</span>kernel_statistics<span class="sc">$</span>acceptance_rate[<span class="dv">5</span>]</span>
+<span id="cb13-27"><a href="#cb13-27" tabindex="-1"></a><span class="fu">rbind</span>(</span>
+<span id="cb13-28"><a href="#cb13-28" tabindex="-1"></a>  <span class="st">&quot;acceptance, paper (%)&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">13</span>, <span class="dv">10</span>),</span>
+<span id="cb13-29"><a href="#cb13-29" tabindex="-1"></a>  <span class="st">&quot;acceptance, Rtwalk (%)&quot;</span> <span class="ot">=</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> <span class="fu">sapply</span>(example4, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">&quot;acceptance_rate&quot;</span>), <span class="dv">1</span>),</span>
+<span id="cb13-30"><a href="#cb13-30" tabindex="-1"></a>  <span class="st">&quot;IAT of log posterior, paper&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">630</span>, <span class="dv">578</span>),</span>
+<span id="cb13-31"><a href="#cb13-31" tabindex="-1"></a>  <span class="st">&quot;IAT of log posterior, Rtwalk&quot;</span> <span class="ot">=</span> <span class="fu">round</span>(<span class="fu">sapply</span>(example4, iat))</span>
+<span id="cb13-32"><a href="#cb13-32" tabindex="-1"></a>)</span>
+<span id="cb13-33"><a href="#cb13-33" tabindex="-1"></a><span class="co">#&gt;                              standard penalised</span></span>
+<span id="cb13-34"><a href="#cb13-34" tabindex="-1"></a><span class="co">#&gt; acceptance, paper (%)            13.0      10.0</span></span>
+<span id="cb13-35"><a href="#cb13-35" tabindex="-1"></a><span class="co">#&gt; acceptance, Rtwalk (%)           13.7      11.1</span></span>
+<span id="cb13-36"><a href="#cb13-36" tabindex="-1"></a><span class="co">#&gt; IAT of log posterior, paper     630.0     578.0</span></span>
+<span id="cb13-37"><a href="#cb13-37" tabindex="-1"></a><span class="co">#&gt; IAT of log posterior, Rtwalk    354.0     328.0</span></span>
+<span id="cb13-38"><a href="#cb13-38" tabindex="-1"></a><span class="fu">c</span>(<span class="st">&quot;penalised move acceptance (%), paper&quot;</span> <span class="ot">=</span> <span class="fl">0.3</span>,</span>
+<span id="cb13-39"><a href="#cb13-39" tabindex="-1"></a>  <span class="st">&quot;penalised move acceptance (%), Rtwalk&quot;</span> <span class="ot">=</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> penalty_acceptance, <span class="dv">3</span>))</span>
+<span id="cb13-40"><a href="#cb13-40" tabindex="-1"></a><span class="co">#&gt;  penalised move acceptance (%), paper penalised move acceptance (%), Rtwalk </span></span>
+<span id="cb13-41"><a href="#cb13-41" tabindex="-1"></a><span class="co">#&gt;                                 0.300                                 0.025</span></span></code></pre></div>
+<p>The modes overlap here, so the standard t-walk already explores the
+target and the penalised move is almost never accepted. The paper
+concludes that the benefit in this example is minimal but the move does
+not interfere. We find the same acceptance rates, and the IATs with and
+without the move are similar, as in the paper; the penalised move is
+accepted even less often than there. Our IATs are about half of the
+paper’s, which does not say which quantity its IAT refers to (we report
+that of the log posterior) or how long its chains were.</p>
+</div>
+<div id="what-is-not-reproduced" class="section level2">
+<h2>6. What is not reproduced</h2>
+<ul>
+<li><strong>The gradient-based penalty (Section 2.2, Example 1, Figure
+2).</strong> It needs the gradient of the log posterior, which the
+t-walk does not use.</li>
+<li><strong>Combining samples from different modes (Section 4).</strong>
+This is an approximate post-processing step based on kernel density
+estimates, not a move of the sampler.</li>
+<li><strong>The radiocarbon example (Section 5).</strong> It uses a
+Python implementation of Bacon on the core LL14, whose data are not
+public.</li>
+</ul>
+</div>
+<div id="using-the-move-in-practice" class="section level2">
+<h2>7. Using the move in practice</h2>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">twalk</span>(log_post, <span class="at">n_iter =</span> <span class="fl">1e6</span>, <span class="at">x0 =</span> x0, <span class="at">xp0 =</span> xp0, <span class="at">n_chains =</span> <span class="dv">4</span>,</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>             <span class="at">control =</span> <span class="fu">twalk_control</span>(<span class="at">penalty_prob =</span> <span class="fl">0.1</span>))</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>fit<span class="sc">$</span>kernel_statistics</span></code></pre></div>
+<ul>
+<li>The move is useful when the target has well-separated modes. When it
+does not, it is accepted very rarely and only adds cost.</li>
+<li>Each penalised move costs two evaluations of the log posterior, so
+<code>penalty_prob = 0.1</code> raises the cost by about 10%.</li>
+<li>Jumps between modes are rare events. Run long chains, use several
+chains with dispersed starting points, and compare them before trusting
+the estimated mode weights.</li>
+<li><code>penalty_kappa</code> sets how far the move reaches. The paper
+notes that the rejection step becomes nearly free as the dimension grows
+(Table 1) and suggests that <span class="math inline">\(\kappa\)</span>
+could be scaled with the dimension.</li>
+</ul>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="co">#&gt; R version 4.6.2 (2026-10-29 ucrt)</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="co">#&gt; Platform: x86_64-w64-mingw32/x64</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co">#&gt; Running under: Windows 11 x64 (build 26300)</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="co">#&gt;   LAPACK version 3.12.1</span></span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="co">#&gt; [1] LC_COLLATE=Portuguese_Brazil.utf8  LC_CTYPE=Portuguese_Brazil.utf8   </span></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co">#&gt; [3] LC_MONETARY=Portuguese_Brazil.utf8 LC_NUMERIC=C                      </span></span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a><span class="co">#&gt; [5] LC_TIME=Portuguese_Brazil.utf8    </span></span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a><span class="co">#&gt; time zone: America/Sao_Paulo</span></span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a><span class="co">#&gt; tzcode source: internal</span></span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a><span class="co">#&gt; [1] Rtwalk_2.3.0   testthat_3.3.2</span></span>
+<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span id="cb15-24"><a href="#cb15-24" tabindex="-1"></a><span class="co">#&gt;  [1] digest_0.6.39    desc_1.4.3       R6_2.6.1         codetools_0.2-20</span></span>
+<span id="cb15-25"><a href="#cb15-25" tabindex="-1"></a><span class="co">#&gt;  [5] xfun_0.62        lattice_0.23-1   magrittr_2.0.5   coda_0.19-4.1   </span></span>
+<span id="cb15-26"><a href="#cb15-26" tabindex="-1"></a><span class="co">#&gt;  [9] knitr_1.52       parallel_4.6.2   lifecycle_1.0.5  cli_3.6.6       </span></span>
+<span id="cb15-27"><a href="#cb15-27" tabindex="-1"></a><span class="co">#&gt; [13] grid_4.6.2       pkgload_1.5.3    compiler_4.6.2   rprojroot_2.1.1 </span></span>
+<span id="cb15-28"><a href="#cb15-28" tabindex="-1"></a><span class="co">#&gt; [17] tools_4.6.2      pkgbuild_1.4.8   brio_1.1.5       evaluate_1.0.5  </span></span>
+<span id="cb15-29"><a href="#cb15-29" tabindex="-1"></a><span class="co">#&gt; [21] Rcpp_1.1.2       otel_0.3.0       rlang_1.3.0</span></span></code></pre></div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
